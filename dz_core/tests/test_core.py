@@ -22,9 +22,24 @@ ABBR = "PTD"
 
 
 def ensure_prepared():
+	"""Prepare the site once. On a site whose setup wizard already ran (a dz_cod
+	test site made by its demo loader), use the company that is there."""
 	if not frappe.db.get_single_value("DZ Core Settings", "company"):
-		prepare(COMPANY, ABBR, FOOD, IFU)
+		if frappe.is_setup_complete():
+			company = (
+				frappe.defaults.get_global_default("company") or frappe.get_all("Company", pluck="name")[0]
+			)
+			prepare(company, frappe.get_cached_value("Company", company, "abbr"), FOOD, IFU)
+		else:
+			prepare(COMPANY, ABBR, FOOD, IFU)
 	return frappe.get_doc("DZ Core Settings")
+
+
+class TestPrepareGuard(IntegrationTestCase):
+	def test_unknown_company_on_configured_site(self):
+		ensure_prepared()
+		with self.assertRaises(frappe.ValidationError):
+			prepare("Société qui n'existe pas", "SQN", FOOD, IFU)
 
 
 class TestSetup(IntegrationTestCase):

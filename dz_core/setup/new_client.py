@@ -49,6 +49,14 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 
 def run_setup_wizard(company, abbr):
 	if frappe.is_setup_complete():
+		# The wizard ran before (by hand, or by another app's setup): it will not
+		# run again, so the company must already exist under this exact name
+		if not frappe.db.exists("Company", company):
+			existing = ", ".join(frappe.get_all("Company", pluck="name")) or "aucune"
+			frappe.throw(
+				f"Le site est déjà configuré, mais la société « {company} » n'existe pas. "
+				f"Sociétés du site : {existing}. Relancez avec le nom exact."
+			)
 		return
 	from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
