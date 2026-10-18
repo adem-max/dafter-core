@@ -52,7 +52,7 @@ bench --site client1.localhost execute dz_core.imports.workbook.import_workbook 
 bench --site client1.localhost execute dz_core.imports.workbook.import_workbook --kwargs "{'path': '/tmp/client1.xlsx', 'dry_run': 0}"
 ```
 
-## Not done yet (see DECISIONS.md)
+## Not done yet (full plan: ROADMAP.md)
 
 - Stamp duty on cash payments, G50 helper, IFU turnover report: waiting for the accountant's rules
 - Invoice legal mentions: checked against decree 05-468, still to be validated by an accountant
