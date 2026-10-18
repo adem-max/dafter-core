@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "creation": "2026-10-18 21:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "sector",
+  "column_break_main",
+  "tax_regime",
+  "invoice_note",
+  "warehouses_section",
+  "raw_materials_warehouse",
+  "wip_warehouse",
+  "column_break_wh",
+  "finished_goods_warehouse"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Société",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sector",
+   "fieldtype": "Select",
+   "label": "Secteur",
+   "options": "Alimentaire et cosmétique\nConfection",
+   "reqd": 1,
+   "description": "Choisi à l'installation. Décide des groupes d'articles, unités et réglages préparés pour ce client."
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_regime",
+   "fieldtype": "Select",
+   "label": "Régime fiscal",
+   "options": "IFU\nRégime réel",
+   "reqd": 1,
+   "default": "IFU",
+   "description": "IFU : pas de TVA sur les factures. Régime réel : TVA appliquée par défaut."
+  },
+  {
+   "fieldname": "invoice_note",
+   "fieldtype": "Small Text",
+   "label": "Mention en bas de facture",
+   "description": "Imprimée sur chaque facture. À faire valider par le comptable du client."
+  },
+  {
+   "fieldname": "warehouses_section",
+   "fieldtype": "Section Break",
+   "label": "Entrepôts"
+  },
+  {
+   "fieldname": "raw_materials_warehouse",
+   "fieldtype": "Link",
+   "label": "Matières premières",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "wip_warehouse",
+   "fieldtype": "Link",
+   "label": "Travaux en cours",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_wh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "finished_goods_warehouse",
+   "fieldtype": "Link",
+   "label": "Produits finis",
+   "options": "Warehouse"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-18 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "DZ Core Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Stock User"
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  },
+  {
+   "read": 1,
+   "role": "Accounts User"
+  },
+  {
+   "read": 1,
+   "role": "Manufacturing User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

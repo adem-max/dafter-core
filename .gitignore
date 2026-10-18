@@ -1,0 +1,15 @@
+.DS_Store
+*.pyc
+*.egg-info
+*.swp
+__pycache__/
+node_modules/
+dz_core/public/dist/
+*.log
+.venv/
+# Never commit client data, backups or site configs
+*.sql
+*.sql.gz
+*.tar
+*.tgz
+site_config.json
