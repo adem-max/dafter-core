@@ -21,6 +21,10 @@ required_apps = ["erpnext"]
 after_install = "dz_core.setup.install.after_install"
 after_migrate = "dz_core.setup.install.after_migrate"
 
+# Optional features per client (dz_core/features.py). Apps declare theirs with
+# a `dz_features` hook; dz_core has none of its own yet.
+extend_bootinfo = ["dz_core.features.boot"]
+
 # One format for customer phones (dz_core/phone.py)
 doc_events = {"Customer": {"validate": "dz_core.phone.normalize_customer_phone"}}
 

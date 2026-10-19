@@ -8,6 +8,7 @@ frappe   (framework)
 erpnext  (stock, sales, purchases, manufacturing, accounting) - never edited
 dz_core  (this app: what every client gets)
 dz_cod   (optional, on top: orders, couriers and returns for online sellers)
+dz_hub   (private, the vendor's own site: clients, offers, billing; talks to dz_core)
 ```
 
 Pack Atelier = a site with `dz_core`.
@@ -26,6 +27,7 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Wilayas | `dz_core/setup/wilayas.py`, doctype DZ Wilaya | The 69 wilayas (2026), each 2026 one with its parent; customers get a wilaya. dz_cod adds delivery rates to each |
 | Phone numbers | `dz_core/phone.py` | Algerian numbers cleaned to one format (`+213 555…` → `0555…`) on the Customer and in imports |
 | Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test (apps on top add their records by hook) |
+| Optional features | `dz_core/features.py`, `dz-features` command | What each client may switch on, per site. Apps declare their features with a `dz_features` hook (dz_cod has four); the hub (dz_hub) sells and applies them |
 | Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
 
 ## Set up a new client
@@ -70,5 +72,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 23 tests (6 unit + 17 integration)
+bench --site test.localhost run-tests --app dz_core     # 30 tests (6 unit + 24 integration)
 ```

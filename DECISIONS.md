@@ -74,9 +74,19 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **The restore check is extended by hooks**, not copied: an app adds
   `dz_restore_check_counted` and `dz_restore_check_last` lists to its
   hooks.py, and `restore_test.sh` compares those too.
-- **Feature switches stay in dz_cod** until dz_core has an optional feature
-  of its own: all four are COD features and the hub depends on dz_cod's
-  command.
+- **Feature switches live in dz_core** (moved 19 October 2026, the same
+  day the split closed): the hub manages every client, most of whom never
+  get dz_cod, so it needs one place to ask "what can this client switch
+  on". dz_core owns the mechanism (`dz_core/features.py`: the site's list in
+  site_config key `dz_features`, `is_enabled`, `@requires_feature`, hiding
+  reports and print formats, the `dz-features` command, `frappe.boot.dz_features`).
+  Each app declares its own features with a `dz_features` hook pointing at
+  a dict; dz_core has none of its own yet. The old key `dz_cod_features` is
+  still read and moved on migrate; `dz-cod-features` stays as an alias.
+- **The catalogue is read with plain imports for the hub**
+  (`bench_catalog`): the hub site does not install the client apps, and
+  `frappe.get_hooks(app_name=...)` and `frappe.get_attr` both refuse an app
+  that is not installed on the current site.
 
 ## Tax
 

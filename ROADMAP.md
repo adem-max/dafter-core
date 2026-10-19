@@ -20,14 +20,15 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 - [x] Excel import workbook with a dry run
 - [x] Backup and restore-test scripts (copied, not yet run on a server)
 - [x] dafter-cod runs on top of dz_core (PR #7)
-- [x] Split finished (19 Oct): wilaya list, phone formatting, Customer phone and wilaya, backup scripts, restore check and server guide moved from dafter-cod (docs/SPLIT.md). Feature switches stay in dafter-cod (DECISIONS.md)
+- [x] Split finished (19 Oct): wilaya list, phone formatting, Customer phone and wilaya, backup scripts, restore check and server guide moved from dafter-cod (docs/SPLIT.md)
+- [x] Feature switches in dz_core and the hub renamed dz_hub (19 Oct): the hub manages every client through dz_core, with an Atelier pack, a Vente en ligne pack (dz_cod) and options (DECISIONS.md)
 
 ## Phase 1: usable on your own laptop (19 Oct to 8 Nov)
 
 Goal: you can set up a client and show it, without help.
 
-- [ ] **Install from GitHub.** `bench get-app` both repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run both test suites.
-  Done when: 23 dz_core and 98 dz_cod tests pass on a bench built only from GitHub.
+- [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
+  Done when: 30 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [ ] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (today it is a manual step).
@@ -89,7 +90,7 @@ Goal: real clients use it daily; their requests shape what comes next.
   Done when: the pilot records purchases, production and sales for 2 weeks without you.
 - [ ] **Fix what pilots hit.** Every pilot request goes to one of: configuration (do it), data (they do it), customization (quote it or say no). Two pilots asking for the same thing: move it into the sector template.
   Done when: each request has a line in DECISIONS.md or LATER.md.
-- [x] **Move the remaining pieces from dafter-cod** (docs/SPLIT.md): done 19 Oct 2026, moved ahead of plan while no client site is live. Feature switches stay in dafter-cod by decision.
+- [x] **Move the remaining pieces from dafter-cod** (docs/SPLIT.md): done 19 Oct 2026, moved ahead of plan while no client site is live. The feature switches followed the same day, for the hub.
 
 Checkpoint 28 Feb 2027: one pilot live and using it daily, one paying client who is a stranger. If not: stop selling the service, keep the skills.
 
