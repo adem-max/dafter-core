@@ -90,8 +90,17 @@ def import_file(filename, profile, sheets, opening_date):
 	write_workbook(profile, path, sheets)
 	file_url = f"/private/files/{filename}"
 	if not frappe.db.exists("File", {"file_url": file_url}):
+		# Attached to the company: a private file is shown only to its owner
+		# (Administrator here) or to users who can read what it is attached to
 		frappe.get_doc(
-			{"doctype": "File", "file_name": filename, "file_url": file_url, "is_private": 1}
+			{
+				"doctype": "File",
+				"file_name": filename,
+				"file_url": file_url,
+				"is_private": 1,
+				"attached_to_doctype": "Company",
+				"attached_to_name": profile.COMPANY,
+			}
 		).insert(ignore_permissions=True)
 
 	check = import_workbook(path)

@@ -59,6 +59,9 @@ SHEETS = {
 		("Wilaya", "wilaya", False),
 		("NIF", "nif", False),
 		("RC", "rc", False),
+		# the buyer's NIS and tax article are legal mentions too (decree 05-468)
+		("NIS", "nis", False),
+		("Article d'imposition (AI)", "ai", False),
 	],
 	"Articles": [
 		("Code", "code", True),
@@ -106,6 +109,8 @@ EXAMPLES = {
 		"12 rue Larbi Ben M'hidi",
 		"Blida",
 		"Blida",
+		"",
+		"",
 		"",
 		"",
 	],
@@ -228,15 +233,20 @@ def read_rows(wb, sheet_name, report):
 	ws = wb[sheet_name]
 	header = [str(cell.value or "").strip() for cell in ws[1]]
 	positions = {}
-	for text, key, _required in columns:
+	for text, key, required in columns:
 		if text not in header:
+			if not required:
+				continue  # an optional column added after the client's template was made
 			report.error(sheet_name, 1, f"colonne « {text} » introuvable (ne changez pas les titres)")
 			return []
 		positions[key] = header.index(text)
 
 	rows = []
 	for number, values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-		row = {key: clean(values[index] if index < len(values) else None) for key, index in positions.items()}
+		row = {key: None for _text, key, _required in columns}
+		row.update(
+			{key: clean(values[index] if index < len(values) else None) for key, index in positions.items()}
+		)
 		if not any(value not in (None, "") for value in row.values()):
 			continue
 		if str(next(iter(row.values())) or "").upper().startswith(EXAMPLE):
@@ -507,6 +517,8 @@ def create(plan, settings, report, opening_date=None):
 				"country": "Algeria",
 				"dz_nif": row["nif"],
 				"dz_rc": row["rc"],
+				"dz_nis": row["nis"],
+				"dz_ai": row["ai"],
 			}
 		).insert(ignore_permissions=True)
 		report.done("Client", doc.name)
@@ -580,6 +592,8 @@ def create_model(row, report):
 	for size in row["sizes"]:
 		for colour in row["colours"]:
 			variant = create_variant(template.name, {"Taille": size, "Couleur": colour})
+			# ERPNext names it "<model>-XL-BLE" (abbreviations): invoices show the words
+			variant.item_name = variant.description = f"{row['name']} {size} {colour}"
 			variant.standard_rate = row["selling"] or 0
 			variant.insert(ignore_permissions=True)
 			report.done("Variante", variant.name)

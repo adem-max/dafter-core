@@ -134,7 +134,7 @@ _ITEMS = [
 	("PF-CONF-FIGUE-450", "Confiture de figue 450 g", FINISHED, "Pot", None, 600, 365),
 	("PF-CONF-ORANGE-250", "Confiture d'orange amère 250 g", FINISHED, "Pot", None, 360, 365),
 	("PF-CONF-COING-450", "Confiture de coing 450 g", FINISHED, "Pot", None, 520, 365),
-	("PF-PATE-DATTE-500", "Pâte de dattes 500 g", FINISHED, "Nos", None, 480, 180),
+	("PF-PATE-DATTE-500", "Pâte de dattes 500 g", FINISHED, "Barquette", None, 480, 180),
 	("PF-MIEL-JUJUBIER-250", "Miel de jujubier 250 g", FINISHED, "Pot", None, 2900, 730),
 	("PF-MIEL-EUCALYPTUS-500", "Miel d'eucalyptus 500 g", FINISHED, "Pot", None, 3200, 730),
 	("PF-MIEL-MULTIFLEUR-500", "Miel toutes fleurs 500 g", FINISHED, "Pot", None, 2700, 730),
@@ -435,8 +435,16 @@ def _customer(index, name, group, wilaya, city, phone):
 		"city": city if business else None,
 		"wilaya": wilaya,
 		# business customers carry their identifiers (printed on their invoices)
-		"nif": f"0000000000{index:05d}" if group in (GROSSISTES, SUPERETTES) else None,
-		"rc": f"00/00-00{index:05d}B26 (démo)" if group in (GROSSISTES, SUPERETTES) else None,
+		**(
+			{
+				"nif": f"0000000000{index:05d}",
+				"rc": f"00/00-00{index:05d}B26 (démo)",
+				"nis": f"0000000000{index:05d}",
+				"ai": f"000000{index:05d}",
+			}
+			if group in (GROSSISTES, SUPERETTES)
+			else {"nif": None, "rc": None, "nis": None, "ai": None}
+		),
 	}
 
 
@@ -548,12 +556,18 @@ USERS = [
 	(
 		"gerant",
 		"Karim",
+		# ERPNext 16 gives some doctypes (Work Order...) to the User roles only
 		[
 			"Accounts Manager",
+			"Accounts User",
 			"Sales Manager",
+			"Sales User",
 			"Stock Manager",
+			"Stock User",
 			"Manufacturing Manager",
+			"Manufacturing User",
 			"Purchase Manager",
+			"Purchase User",
 			"Item Manager",
 		],
 		"fr",

@@ -105,6 +105,30 @@ class TestSetup(IntegrationTestCase):
 		self.assertEqual(frappe.get_meta("Sales Invoice").default_print_format, "Facture DZ")
 		self.assertEqual(frappe.get_meta("Delivery Note").default_print_format, "Bon de livraison DZ")
 
+	def test_cancelled_invoices_can_be_printed(self):
+		from dz_core.setup.new_client import allow_printing_cancelled
+
+		allow_printing_cancelled()
+		self.assertTrue(frappe.db.get_single_value("Print Settings", "allow_print_for_cancelled"))
+
+	def test_algerian_address_prints_without_the_country(self):
+		from frappe.contacts.doctype.address.address import get_address_display
+
+		from dz_core.setup.new_client import set_address_template
+
+		set_address_template()
+		text = get_address_display(
+			{
+				"address_line1": "12 rue Larbi Ben M'hidi",
+				"city": "Boufarik",
+				"state": "Blida",
+				"country": "Algeria",
+			}
+		)
+		self.assertIn("Boufarik", text)
+		self.assertIn("Blida", text)
+		self.assertNotIn("Algeria", text)
+
 	def test_wizard_item_groups_removed_unless_used(self):
 		from dz_core.setup.sectors import WIZARD_ITEM_GROUPS, remove_wizard_item_groups
 
@@ -174,7 +198,18 @@ class TestWorkbook(IntegrationTestCase):
 		def fill(wb):
 			wb["Fournisseurs"].append([f"Fournisseur {t}", "0550000000", "Rue 1", "Médéa", ""])
 			wb["Clients"].append(
-				[f"Client {t}", "0661000000", "", "Rue 2", "Blida", "Blida", "000016001234567", ""]
+				[
+					f"Client {t}",
+					"0661000000",
+					"",
+					"Rue 2",
+					"Blida",
+					"Blida",
+					"000016001234567",
+					"",
+					"000016001234568",
+					"16000000001",
+				]
 			)
 			wb["Articles"].append([sugar, "Sucre", "Matières premières", "Kg", 120, None, "Non", "Non", None])
 			wb["Articles"].append(
@@ -200,10 +235,11 @@ class TestWorkbook(IntegrationTestCase):
 		self.assertEqual(result["errors"], [])
 		self.assertTrue(frappe.db.get_value("Item", jam, "has_batch_no"))
 		customer = frappe.db.get_value(
-			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya"]
+			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya", "dz_nis", "dz_ai"]
 		)
-		self.assertEqual(customer, ("0661000000", "09 - Blida"))
+		self.assertEqual(customer, ("0661000000", "09 - Blida", "000016001234568", "16000000001"))
 		self.assertEqual(frappe.db.count("Item", {"variant_of": model}), 4)
+		self.assertTrue(frappe.db.exists("Item", {"variant_of": model, "item_name": "T-shirt L Orange"}))
 		self.assertTrue(
 			frappe.db.exists("Item Attribute Value", {"parent": "Couleur", "attribute_value": "Orange"})
 		)
@@ -220,6 +256,18 @@ class TestWorkbook(IntegrationTestCase):
 
 		again = import_workbook(path, dry_run=0)
 		self.assertEqual(again["created"], {})
+
+	def test_file_from_an_older_template_still_imports(self):
+		# NIS and AI were added to "Clients" later: a file without them is fine
+		name = f"Client {self.tag} ancien"
+
+		def fill(wb):
+			wb["Clients"].delete_cols(9, 2)
+			wb["Clients"].append([name, "0661000001", "", "Rue 3", "Blida", "Blida", "", ""])
+
+		result = import_workbook(self.workbook(fill), dry_run=0)
+		self.assertEqual(result["errors"], [])
+		self.assertTrue(frappe.db.exists("Customer", {"customer_name": name}))
 
 
 class TestPrintFormat(IntegrationTestCase):

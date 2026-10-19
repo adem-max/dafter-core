@@ -35,7 +35,7 @@ SECTORS = {
 		"item_groups": ["Matières premières", "Emballages", "Produits finis"],
 		# Units the trade counts in, on top of ERPNext's own (Kg, Gram, Litre...)
 		# (name, whole number only?)
-		"uoms": [("Pot", 1), ("Flacon", 1), ("Sachet", 1), ("Carton", 1), ("Bocal", 1)],
+		"uoms": [("Pot", 1), ("Flacon", 1), ("Sachet", 1), ("Carton", 1), ("Bocal", 1), ("Barquette", 1)],
 		# Batch and expiry tracking: applied by the importer to items of these groups
 		"batch_groups": ["Matières premières", "Produits finis"],
 		"item_attributes": {},

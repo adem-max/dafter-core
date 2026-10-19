@@ -12,7 +12,7 @@ only**: this is Pack Atelier, without the COD app.
 | Makes | 6 jams, date paste, 3 honeys (batches + expiry dates) | 6 models in sizes and colours (44 variants) |
 | Buys | Fruit pulp, sugar, dates, bulk honey, jars, lids, labels, cartons | Jersey, fleece, denim, poplin, thread (by the cone), buttons, zips, rivets, labels, bags |
 | Sells to | 3 wholesalers, 12 superettes, 15 grocers, 5 individuals, in 10 wilayas | 3 wholesalers, 11 boutiques, 4 companies (work coats), in 8 wilayas |
-| 13 weeks (load of 19 Oct) | 151 orders, 146 invoices, 124 work orders, 41 purchases; about 980 documents | 78 orders, 76 invoices, 92 work orders, 32 purchases; about 570 documents |
+| 13 weeks (load of 19 Oct) | 151 orders, 146 invoices, 124 work orders, 41 purchases; about 980 documents | 78 orders, 76 invoices, 92 work orders, 32 purchases; about 580 documents |
 
 **The figures are placeholders**, plausible but not a real producer's. They
 live in `dz_core/demo/food.py` and `clothing.py` only; replace them with real
@@ -34,9 +34,10 @@ Same for the clothing workshop with `atelier-demo.localhost` and
 `'profile': 'clothing'`. A load takes about 20 minutes (clothing: 10) on the WSL bench
 (code on the Windows disk); it prints its steps and a summary at the end.
 
-On a laptop, `bench start` shows only the site picked with `bench use`
-(dafter-cod docs/LOCAL_TEST.md section 5): `bench use food-demo.localhost`,
-restart `bench start`, open http://food-demo.localhost:8000.
+On a laptop, `bench start` shows only the default site. To open a demo next
+to it, without changing anything: `bench --site food-demo.localhost serve
+--port 8001`, then http://food-demo.localhost:8001 (clothing: port 8002).
+Or make it the default (dafter-cod docs/LOCAL_TEST.md section 5).
 
 ## Logins
 
@@ -66,8 +67,9 @@ password chosen at `new-site`.
    warehouses, tax regime, default print formats.
 2. The masters go in through **the client import workbook**, in two files, as
    a client's would: data first, then the opening stock count (dated the first
-   day of the story). Both files stay in **File** (private files,
-   `import-demo-<profile>-*.xlsx`) to show a prospect.
+   day of the story). Both files stay in **File** (private files attached to
+   the Company, so the demo users see them; Frappe adds a few characters to
+   the names: `import-demo-<profile>-1-donnees….xlsx`) to show a prospect.
 3. `planner.py` plans the 13 weeks day by day (Sunday to Thursday), keeping
    its own stock so every document is possible: orders come in, work orders
    start when finished stock runs low, raw materials are ordered below their
@@ -83,13 +85,13 @@ password chosen at `new-site`.
 
 | What | Where |
 | --- | --- |
-| Their Excel file becomes their data | File → `import-demo-food-1-donnees.xlsx`; Stock → Item, Customer, BOM |
+| Their Excel file becomes their data | File (or the Company's attachments) → `import-demo-food-1-donnees….xlsx`; Stock → Item, Customer, BOM |
 | Recipes and work orders | Manufacturing → BOM, Work Order (one in progress today) |
-| Cost per batch, and a price rise reaching it | Stock → Stock Ledger report, item "Confiture de fraise 250 g", voucher type Stock Entry: the incoming rate of each batch made; it steps up once the pulp bought after the 18 % rise (eight weeks ago) is used (T-shirts: jersey +15 %, nine weeks ago; item "T-shirt col rond" variants) |
+| Cost per batch, and a price rise reaching it | Stock → report "Livre d'Inventaire" (Stock Ledger), item "Confiture de fraise 250 g": column "Prix d'Entrée" on the rows whose "Type de Référence" is Stock Entry, one per batch made; it steps up once the pulp bought after the 18 % rise (eight weeks ago) is used (T-shirts: jersey +15 %, nine weeks ago; item "T-shirt col rond" variants) |
 | Batches and expiry dates, oldest sold first | Stock → Batch; the last quince jam batch expires within 30 days |
 | Legal invoices | Accounts → Sales Invoice → Print: Facture DZ by default, amount in words, legal mentions; one cancelled invoice prints FACTURE ANNULÉE |
-| Who owes what | Accounts → Accounts Receivable: about a dozen overdue invoices, one customer who stopped paying |
-| What to buy | Stock → Stock Projected Qty report, warehouse Matières premières: the 250 g or 500 g jars are under their reorder level with orders on the way (the glassworks delivers 8 working days after the order); in the workshop, fleece or denim from the Oran mill (12 working days). Buying → Purchase Order: the ones still to receive |
+| Who owes what | Accounts → Accounts Receivable: about fifteen overdue invoices (clothing: eight); Superette Le Panier stopped paying its last invoices |
+| What to buy | Stock → report "Qté de Stock Projeté" (Stock Projected Qty), warehouse Matières premières: "Quantité Réelle" under "Niveau de réapprovisionnement", with "Qté Commandée"; the 250 g or 500 g jars are under their reorder level with orders on the way (the glassworks delivers 8 working days after the order); in the workshop, fleece or denim from the Oran mill (12 working days). Buying → Purchase Order: the ones still to receive |
 | What to deliver | Selling → Sales Order: orders to deliver and bill |
 | Month-end counts | Stock → Stock Reconciliation: a few breakages found |
 | Arabic | Log in as `ventes@…`: the whole interface right-to-left |
@@ -105,9 +107,9 @@ and sizes instead of jams.
 2. **A batch is made** (2 min). Manufacturing → Work Order: the one in
    progress, its materials already in Travaux en cours. Open a completed one:
    its stock entry, the jars made, the batch number and expiry date.
-3. **What a jar costs** (2 min). Stock Ledger report, item "Confiture de
-   fraise 250 g", voucher type Stock Entry: the incoming rate of an August
-   batch, then an October one. The pulp price went up: the new batches carry
+3. **What a jar costs** (2 min). Report "Livre d'Inventaire", item
+   "Confiture de fraise 250 g": on the Stock Entry rows, the "Prix d'Entrée"
+   of an August batch (about 156 DA), then an October one (about 165 DA). The pulp price went up: the new batches carry
    it, the old stock kept its cost. (The cost-per-product report of Phase 2
    will show this in one screen.)
 4. **The invoice** (2 min). Sales Invoice → any paid one → Print: legal
@@ -116,7 +118,7 @@ and sizes instead of jams.
 5. **Money** (1 min). Accounts Receivable: who is late, by how much.
 6. **Stock to watch** (1 min). The quince batch close to expiry; jars from
    the glassworks under their reorder level, with their purchase orders on
-   the way (Stock Projected Qty). Quince and, after September, fig jam are no longer
+   the way (report "Qté de Stock Projeté"). Quince and, after September, fig jam are no longer
    made: they sell until their stock runs out, then customers are told no.
 7. **Arabic and roles** (1 min). Log in as `ventes@…`: Arabic, and only sales
    and payments.

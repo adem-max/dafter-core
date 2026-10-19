@@ -58,6 +58,16 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   next to the sector's French groups and confused clients. A group still used
   by an item or a setting is kept. "Services" stays: producers bill services,
   and the word is the same in French.
+- **Cancelled invoices stay printable** (Print Settings "allow print for
+  cancelled", set by `prepare()`, 19 October 2026): ERPNext refuses by
+  default, which made Facture DZ's FACTURE ANNULÉE mark unreachable. Found
+  walking the demo script.
+- **Algerian addresses print in French, without the country**: ERPNext's
+  wizard makes an "Algeria" Address Template with Frappe's stock text, which
+  ends with "Algeria" in English on every invoice. `prepare()` replaces it
+  (postcode and city, then the wilaya), unless the client edited it.
+- **Food sector counts trays** ("Barquette"): date paste is sold by the tray,
+  and "Nos" on an invoice means nothing to a buyer.
 - **Clothing counts thread by the cone, in fractions** ("Cône", 19 October
   2026): a T-shirt uses about 0.02 of a cone, and ERPNext refuses a fraction
   of a whole-number unit such as Nos in a BOM or a stock entry. Shipping
@@ -146,6 +156,13 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   start 13 weeks back. The batches of that count are made on that date too:
   ERPNext takes the oldest batch first, and an opening batch stamped with the
   import day looked newer than everything produced after it.
+- **Clients carry NIS and tax article (AI) too** (19 October 2026): the
+  buyer's mentions on a business invoice are RC, NIF, NIS and AI; the sheet
+  had only the first two. A column added later is optional in the file: a
+  file made from an older template still imports.
+- **Variants are named in words** ("Chemise manches longues XL Bleu"):
+  ERPNext names them with the attribute abbreviations ("…-XL-BLE"), which
+  then print on the invoice. The item code keeps ERPNext's form.
 - **Models and their stock come in two files** when the stock lists variants:
   the check of a file runs before anything is created, so a variant made by
   the "Modèles" sheet is unknown to the "Stock initial" sheet of the same
@@ -225,6 +242,12 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **Labour is an additional cost on each manufacture entry** (per unit, in
   the profile), not BOM operations: operations would need workstations and
   job cards for every work order, which a small workshop does not keep.
+- **The manager login has both the Manager and the User roles** of each
+  area: ERPNext 16 lets only Manufacturing User and Stock User read a Work
+  Order. A reload adds a role missing from an existing login.
+- **The import files are attached to the Company**: a private file is shown
+  only to its owner (Administrator, who ran the load) or to users who can
+  read what it is attached to.
 - **Demo logins share one password** (`Demo-2026!`), written in docs/DEMO.md:
   demo sites hold only invented data.
 - **A load takes about 20 minutes on the WSL bench** (code on the Windows

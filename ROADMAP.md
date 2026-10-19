@@ -28,7 +28,7 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 Goal: you can set up a client and show it, without help.
 
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 40 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 43 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [x] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (done 19 Oct, with the demos).

@@ -44,6 +44,8 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	apply_tax_regime(company, tax_regime)
 	opening_account(company)
 	set_default_print_formats()
+	allow_printing_cancelled()
+	set_address_template()
 
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
@@ -68,6 +70,36 @@ def set_default_print_formats():
 			make_property_setter(
 				doctype, None, "default_print_format", print_format, "Data", for_doctype=True
 			)
+
+
+def allow_printing_cancelled():
+	"""A cancelled invoice must stay printable (Facture DZ marks it FACTURE
+	ANNULÉE across the page); ERPNext refuses by default."""
+	frappe.db.set_single_value("Print Settings", "allow_print_for_cancelled", 1)
+
+
+# How an Algerian address prints (invoices, delivery notes): ERPNext has no
+# template for Algeria, and its default one ends with the country, in English
+ADDRESS_TEMPLATE = """{{ address_line1 }}<br>
+{% if address_line2 %}{{ address_line2 }}<br>{% endif -%}
+{% if pincode %}{{ pincode }} {% endif %}{{ city }}<br>
+{% if state and state != city %}{{ state }}<br>{% endif -%}
+{% if country and country != "Algeria" %}{{ country }}<br>{% endif -%}
+"""
+
+
+def set_address_template():
+	"""A French address template for Algeria. ERPNext's wizard makes one with
+	Frappe's stock text; it is replaced unless the client edited it."""
+	from frappe.contacts.doctype.address_template.address_template import get_default_address_template
+
+	current = frappe.db.get_value("Address Template", "Algeria", "template")
+	if current is None:
+		frappe.get_doc(
+			{"doctype": "Address Template", "country": "Algeria", "template": ADDRESS_TEMPLATE}
+		).insert(ignore_permissions=True)
+	elif current.strip() == get_default_address_template().strip():
+		frappe.db.set_value("Address Template", "Algeria", "template", ADDRESS_TEMPLATE)
 
 
 def run_setup_wizard(company, abbr):

@@ -214,6 +214,11 @@ def setup_users(p):
 	for login, first_name, roles, language in p.USERS:
 		email = f"{login}@{site}"
 		if frappe.db.exists("User", email):
+			# a role added to the profile later reaches the existing login
+			user = frappe.get_doc("User", email)
+			missing = set(roles) - {row.role for row in user.roles}
+			if missing:
+				user.add_roles(*sorted(missing))
 			continue
 		user = frappe.get_doc(
 			{

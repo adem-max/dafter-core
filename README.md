@@ -46,7 +46,9 @@ Tax regimes: `IFU`, `Régime réel`.
 Full server guide (Ubuntu, SSL, backups, the 2-hour checklist): `docs/DEPLOY.md`.
 
 `prepare` also makes "Facture DZ" and "Bon de livraison DZ" the default print
-formats and removes the English item groups ERPNext's wizard leaves unused.
+formats, lets cancelled invoices print (FACTURE ANNULÉE), prints Algerian
+addresses in French without the country, and removes the English item groups
+ERPNext's wizard leaves unused.
 
 Then, by hand: the legal mentions on the Company form, the company address,
 and users.
@@ -90,5 +92,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 40 tests (13 unit + 27 integration)
+bench --site test.localhost run-tests --app dz_core     # 43 tests (13 unit + 30 integration)
 ```

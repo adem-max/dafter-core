@@ -363,6 +363,8 @@ def _customer(index, name, group, wilaya, city, phone):
 		"wilaya": wilaya,
 		"nif": f"1900000000{index:05d}",
 		"rc": f"19/00-01{index:05d}A26 (démo)" if group != BOUTIQUES or index % 2 else None,
+		"nis": f"1900000000{index:05d}",
+		"ai": f"190000{index:05d}",
 	}
 
 
@@ -452,12 +454,18 @@ USERS = [
 	(
 		"gerant",
 		"Nour",
+		# ERPNext 16 gives some doctypes (Work Order...) to the User roles only
 		[
 			"Accounts Manager",
+			"Accounts User",
 			"Sales Manager",
+			"Sales User",
 			"Stock Manager",
+			"Stock User",
 			"Manufacturing Manager",
+			"Manufacturing User",
 			"Purchase Manager",
+			"Purchase User",
 			"Item Manager",
 		],
 		"fr",
