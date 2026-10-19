@@ -8,7 +8,7 @@
 #   4. if HEALTHCHECK_URL is set, pings it (with /fail on any error), so a
 #      backup that silently stopped working sends you an e-mail
 #
-# Install (see dz-cod docs/DEPLOY.md, step 9):
+# Install (see docs/DEPLOY.md, step 9):
 #   cp ~/frappe-bench/apps/dz_core/scripts/backup_offsite.sh ~/backup_offsite.sh
 #   chmod +x ~/backup_offsite.sh
 #   crontab -e   ->   30 2 * * * /home/frappe/backup_offsite.sh >> /home/frappe/backup_offsite.log 2>&1

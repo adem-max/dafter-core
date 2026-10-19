@@ -134,9 +134,10 @@ class TestWorkbook(IntegrationTestCase):
 		def fill(wb):
 			wb["Articles"].append([code, "Sucre", "Groupe inexistant", "Kg", 120, None, "Non", "Non", None])
 			wb["Stock initial"].append([code, "Entrepôt inexistant", 10, 120, None, None])
+			wb["Clients"].append([f"Client {code}", "", "", "", "", "Wilaya inexistante", "", ""])
 
 		result = import_workbook(self.workbook(fill), dry_run=0)
-		self.assertEqual(len(result["errors"]), 2, result["errors"])
+		self.assertEqual(len(result["errors"]), 3, result["errors"])
 		self.assertFalse(frappe.db.exists("Item", code))
 
 	def test_full_import_then_reimport(self):
@@ -172,6 +173,10 @@ class TestWorkbook(IntegrationTestCase):
 		result = import_workbook(path, dry_run=0)
 		self.assertEqual(result["errors"], [])
 		self.assertTrue(frappe.db.get_value("Item", jam, "has_batch_no"))
+		customer = frappe.db.get_value(
+			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya"]
+		)
+		self.assertEqual(customer, ("0661000000", "09 - Blida"))
 		self.assertEqual(frappe.db.count("Item", {"variant_of": model}), 4)
 		self.assertTrue(
 			frappe.db.exists("Item Attribute Value", {"parent": "Couleur", "attribute_value": "Orange"})

@@ -33,7 +33,9 @@ import frappe
 from frappe.utils import cint, flt, getdate
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import get_settings
+from dz_core.phone import normalize_phone
 from dz_core.setup.sectors import CLOTHING, SECTORS
+from dz_core.setup.wilayas import find_wilaya
 
 EXAMPLE = "EXEMPLE"
 YES = {"oui", "o", "yes", "y", "1", "x"}
@@ -341,6 +343,8 @@ def check(data, settings, report):
 	for number, row in data["Clients"]:
 		if row["address"] and not row["city"]:
 			report.error("Clients", number, "Ville à remplir quand l'adresse est remplie")
+		if row["wilaya"] and not find_wilaya(row["wilaya"]):
+			report.error("Clients", number, f"Wilaya « {row['wilaya']} » inconnue (ex. 16, Alger)")
 		if frappe.db.exists("Customer", {"customer_name": row["name"]}):
 			report.skip("Client", row["name"])
 		else:
@@ -473,7 +477,7 @@ def create(plan, settings, report):
 				"doctype": "Supplier",
 				"supplier_name": row["name"],
 				"supplier_type": "Company",
-				"mobile_no": row["phone"],
+				"mobile_no": normalize_phone(row["phone"]),
 				"address_line1": row["address"],
 				"city": row["city"],
 				"country": "Algeria",
@@ -483,16 +487,20 @@ def create(plan, settings, report):
 		report.done("Fournisseur", doc.name)
 
 	for row in plan["customers"]:
+		phone = normalize_phone(row["phone"])
+		wilaya = find_wilaya(row["wilaya"])
 		doc = frappe.get_doc(
 			{
 				"doctype": "Customer",
 				"customer_name": row["name"],
 				"customer_type": "Company" if row["nif"] or row["rc"] else "Individual",
-				"mobile_no": row["phone"],
+				"mobile_no": phone,
+				"dz_phone": phone,
 				"email_id": row["email"],
 				"address_line1": row["address"],
 				"city": row["city"],
-				"state": row["wilaya"],
+				"state": frappe.db.get_value("DZ Wilaya", wilaya, "wilaya_name") if wilaya else None,
+				"dz_wilaya": wilaya,
 				"country": "Algeria",
 				"dz_nif": row["nif"],
 				"dz_rc": row["rc"],

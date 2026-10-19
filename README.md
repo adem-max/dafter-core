@@ -23,7 +23,10 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Legal mentions | `dz_core/setup/custom_fields.py` | Company: legal form, activity, RC or AE card, NIF, NIS, AI, capital. Customer: RC, NIF, NIS, AI. Invoice: payment method |
 | Print formats | `dz_core/dz_core/print_format/` | "Facture DZ" (Sales Invoice) and "Bon de livraison DZ" (Delivery Note) |
 | Import workbook | `dz_core/imports/workbook.py` | One Excel file: suppliers, customers, items, clothing models, BOMs, opening stock |
-| Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test |
+| Wilayas | `dz_core/setup/wilayas.py`, doctype DZ Wilaya | The 69 wilayas (2026), each 2026 one with its parent; customers get a wilaya. dz_cod adds delivery rates to each |
+| Phone numbers | `dz_core/phone.py` | Algerian numbers cleaned to one format (`+213 555…` → `0555…`) on the Customer and in imports |
+| Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test (apps on top add their records by hook) |
+| Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
 
 ## Set up a new client
 
@@ -36,6 +39,8 @@ bench --site client1.localhost execute dz_core.setup.new_client.prepare \
 
 Sectors: `Alimentaire et cosmétique`, `Confection`.
 Tax regimes: `IFU`, `Régime réel`.
+
+Full server guide (Ubuntu, SSL, backups, the 2-hour checklist): `docs/DEPLOY.md`.
 
 Then, by hand: the legal mentions on the Company form, the company address,
 users, and the default print formats (Sales Invoice: "Facture DZ", Delivery
@@ -56,11 +61,14 @@ bench --site client1.localhost execute dz_core.imports.workbook.import_workbook 
 
 - Stamp duty on cash payments, G50 helper, IFU turnover report: waiting for the accountant's rules
 - Invoice legal mentions: checked against decree 05-468, still to be validated by an accountant
-- Wilaya list, phone formatting, feature switches and the deployment guide still live in dz_cod (`docs/SPLIT.md`)
+- Translations: only the wilaya and contact labels have English and Arabic so far (`dz_core/translations/`)
+
+The split with dz_cod is finished: `docs/SPLIT.md` lists what moved here, what
+stays in dz_cod and why, and the rule for new work.
 
 ## Tests
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core
+bench --site test.localhost run-tests --app dz_core     # 23 tests (6 unit + 17 integration)
 ```

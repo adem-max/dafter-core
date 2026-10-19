@@ -8,6 +8,7 @@ regime) is not here: it is dz_core.setup.new_client.prepare, run once.
 import frappe
 
 from dz_core.setup.custom_fields import setup_custom_fields
+from dz_core.setup.wilayas import setup_wilayas
 
 
 def after_install():
@@ -20,4 +21,5 @@ def after_migrate():
 
 def setup_all():
 	setup_custom_fields()
+	setup_wilayas()
 	frappe.db.commit()
