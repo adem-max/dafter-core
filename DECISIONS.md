@@ -117,3 +117,31 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **Opening stock once per item and warehouse.** It can come in several
   files, but an item that already has stock in a warehouse is refused there:
   after go-live, corrections go through ERPNext's own Stock Reconciliation.
+
+## Demos (19 October 2026)
+
+- **Two producer demos, one per sector template**: a food producer and a
+  clothing workshop. Each template needs a demo to be checked anyway, and
+  Phase 2 has three weeks at about 10 hours a week, which leaves no room for a
+  third. With Encre & Fil (dafter-cod's COD demo) that makes three demo sites,
+  one per way of buying: Atelier for food, Atelier for clothing, Vente en
+  ligne.
+- **The food demo is one coherent business** (jams, date paste, honey), not
+  the "honey/cosmetics producer" first planned: a prospect has to recognize
+  their own trade. Cosmetics share its mechanics (recipes by weight,
+  batches, expiry), so the food demo also serves a cosmetics prospect until
+  one is in the pipeline.
+- **The clothing workshop stays**: garment workshops are one of the two
+  verticals named in the October deep-dive, and size-and-colour variants
+  with fabric costing are where ERPNext's manufacturing beats billing-only
+  tools such as Factee.
+- **One demo per tax regime**: food on régime réel (TVA shown), clothing on
+  IFU (no TVA, IFU note), so both paths of `apply_tax_regime` are on screen.
+- **"Online sellers who make what they sell"** (the deep-dive's other target)
+  is shown later by upgrading Encre & Fil with BOMs and work orders, not by a
+  new demo site: it already has a workshop warehouse for blank t-shirts.
+- **Not built now**: joinery (make-to-order, a different production pattern
+  from both demos), bakery, printing. A demo for those comes when a prospect
+  in that trade appears, like a third sector template.
+- **Built from real figures**: approximate numbers from one real producer per
+  sector (Required Data doc, items C1 and C2) beat precise invented ones.
