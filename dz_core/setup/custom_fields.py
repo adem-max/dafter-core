@@ -13,6 +13,9 @@ What the decree asks for, and where it lives:
 - payment method and payment date -> Sales Invoice "dz_payment_mode" and
   ERPNext's own due date
 
+Customer phone (normalized, dz_core/phone.py) and wilaya (DZ Wilaya) are here
+too: every client has customers somewhere in Algeria.
+
 The exact list must be checked with an accountant before a client goes live.
 """
 
@@ -62,6 +65,31 @@ COMPANY_FIELDS = [
 ]
 
 CUSTOMER_FIELDS = [
+	# Phone and wilaya: every client needs them (moved from dz_cod, which adds
+	# commune and address to the same section for its delivery snapshot)
+	{
+		"fieldname": "dz_section",
+		"label": "Coordonnées",
+		"fieldtype": "Section Break",
+		"insert_after": "customer_group",
+	},
+	{
+		"fieldname": "dz_phone",
+		"label": "Téléphone",
+		"fieldtype": "Data",
+		"options": "Phone",
+		"insert_after": "dz_section",
+		"in_standard_filter": 1,
+		"in_global_search": 1,
+	},
+	{
+		"fieldname": "dz_wilaya",
+		"label": "Wilaya",
+		"fieldtype": "Link",
+		"options": "DZ Wilaya",
+		"insert_after": "dz_phone",
+		"in_standard_filter": 1,
+	},
 	{
 		"fieldname": "dz_legal_section",
 		"label": "Identifiants (client professionnel)",

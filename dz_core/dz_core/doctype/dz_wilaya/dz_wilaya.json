@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:{code} - {wilaya_name}",
+ "creation": "2026-10-09 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "code",
+  "wilaya_name",
+  "column_break_main",
+  "parent_wilaya"
+ ],
+ "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Code",
+   "length": 2,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "wilaya_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Nom de la wilaya",
+   "reqd": 1
+  },
+  {
+   "description": "Pour les wilayas créées en 2026 : wilaya d'origine (certains transporteurs utilisent encore l'ancien découpage).",
+   "fieldname": "parent_wilaya",
+   "fieldtype": "Link",
+   "label": "Wilaya d'origine",
+   "options": "DZ Wilaya"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "DZ Wilaya",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Stock User"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "search_fields": "wilaya_name,code",
+ "show_title_field_in_link": 0,
+ "sort_field": "code",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "wilaya_name"
+}

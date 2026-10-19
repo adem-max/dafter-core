@@ -17,6 +17,13 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Python package and its module on every live site; the brand lives in the
   repo names, `app_title`, logos and the website.
 
+- **The split with dz_cod is finished** (19 October 2026, `docs/SPLIT.md`).
+  Rule: what every client needs goes here, what only an online seller needs
+  goes in dz_cod. dz_core never imports dz_cod; when it needs something from
+  an app on top, it offers a hook. Done ahead of ROADMAP Phase 4 on purpose:
+  moving a doctype between apps costs nothing before a client site is live
+  and a migration patch per site after.
+
 ## Setup
 
 - **Setup is code, not fixtures.** `sectors.py` and `tax.py` create what is
@@ -34,20 +41,49 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   "Magasins" stays the company default for anything else.
 - **ERPNext v16 moved the default warehouses to the Company** (section
   "Warehouse Defaults"). Stock Settings and Manufacturing Settings no longer
-  have them. dz_cod still writes Stock Settings `default_warehouse`, which
-  no longer does anything on v16.
+  have the WIP and finished-goods ones. The general `default_warehouse`
+  followed in ERPNext 16.51; up to 16.50 it is still in Stock Settings, so
+  dz_cod's demo loader writes whichever exists (19 October 2026).
 - **An opening-balance account is added** ("Ouverture temporaire", type
   Temporary, under the liability root): the Algerian chart has none and the
   opening stock import needs one.
 - **Algerian chart of accounts**: "Algerie - Plan Comptable General 2 avec
   code", shipped with ERPNext, same as dz_cod.
 
+## Places and phones (moved from dz_cod, 19 October 2026)
+
+- **The 69 wilayas are a dz_core doctype (DZ Wilaya)**: every client's
+  customers live somewhere in Algeria, and imports need a list to check
+  against. dz_cod's reasons for a doctype still hold (ERPNext has no list of
+  Algerian provinces; Territory is the sales tree). The record name stays
+  "16 - Alger" and the 2026 wilayas keep their parent; see dz_cod's
+  DECISIONS.md for the sources, which still need checking against the
+  Journal officiel.
+- **Delivery rates are dz_cod custom fields on DZ Wilaya**, with the field
+  names they had as standard fields, so migrating an existing site moves no
+  data. A producer without dz_cod sees only code, name and parent.
+- **Customer phone and wilaya are dz_core fields** (`dz_phone`, `dz_wilaya`,
+  section "Coordonnées"); commune and address stay dz_cod's delivery
+  snapshot. The import workbook fills them, so imported customers are ready
+  for COD orders, and it refuses a wilaya it cannot find ("16", "Alger",
+  "16 - Alger", accents and case ignored). ERPNext's own `mobile_no` and the
+  Address are still filled as before.
+- **Phones are normalized on every Customer save** (`dz_core/phone.py`, rule
+  in dz_cod's DECISIONS.md): `+213` and `00213` become `0`, unknown formats
+  are kept as typed.
+- **The restore check is extended by hooks**, not copied: an app adds
+  `dz_restore_check_counted` and `dz_restore_check_last` lists to its
+  hooks.py, and `restore_test.sh` compares those too.
+- **Feature switches stay in dz_cod** until dz_core has an optional feature
+  of its own: all four are COD features and the hub depends on dz_cod's
+  command.
+
 ## Tax
 
 - **IFU is the default.** Most very small producers pay the IFU (individuals
   up to 8 million DA turnover) and charge no TVA, so the 19 % template made
-  by the setup wizard is not applied by default for them. dz_cod already
-  removed it for COD sellers for the same reason.
+  by the setup wizard is not applied by default for them. This replaced
+  dz_cod's own "remove the default 19 % VAT" step.
 - **Régime réel**: the 19 % template stays the default. ERPNext's wizard
   already makes a 9 % one (reduced rate: basic foodstuffs and listed
   essentials, extended by the 2026 finance law); one is added only if missing.

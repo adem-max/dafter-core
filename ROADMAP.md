@@ -20,20 +20,21 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 - [x] Excel import workbook with a dry run
 - [x] Backup and restore-test scripts (copied, not yet run on a server)
 - [x] dafter-cod runs on top of dz_core (PR #7)
+- [x] Split finished (19 Oct): wilaya list, phone formatting, Customer phone and wilaya, backup scripts, restore check and server guide moved from dafter-cod (docs/SPLIT.md). Feature switches stay in dafter-cod (DECISIONS.md)
 
 ## Phase 1: usable on your own laptop (19 Oct to 8 Nov)
 
 Goal: you can set up a client and show it, without help.
 
 - [ ] **Install from GitHub.** `bench get-app` both repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run both test suites.
-  Done when: 11 dz_core and 104 dz_cod tests pass on a bench built only from GitHub.
+  Done when: 23 dz_core and 98 dz_cod tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [ ] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (today it is a manual step).
   Done when: a new Sales Invoice prints as Facture DZ without touching Print Settings.
 - [ ] **Check the PDF in the browser.** Start the web server (`bench start`), open an invoice, click PDF.
   Done when: the PDF matches the sample (French amount in words, legal mentions, stamp box).
-- [ ] **French and Arabic labels.** Add `dz_core/translations/fr.csv` and `ar.csv` for every label dz_core adds (fields, settings, messages), like dafter-cod.
+- [ ] **French and Arabic labels.** Complete `dz_core/translations/` (started with the wilaya and contact labels moved from dafter-cod) for every label dz_core adds (fields, settings, messages), and copy dafter-cod's translation test so a forgotten label fails.
   Done when: a user with language Arabic sees Arabic labels on the fields dz_core adds.
 - [ ] **Clean up demo noise.** The setup wizard leaves English item groups (Products, Raw Material, Services...). Decide: hide, rename or keep, and do it in the sector template.
   Done when: the Item Group list shows only what the sector needs, or the choice is written in DECISIONS.md.
@@ -73,7 +74,7 @@ Goal: a first pilot can go live on the VPS.
   Done when: the accountant checks it against a real month.
 - [ ] (A) **Default stock accounts.** Fix the inventory and stock adjustment accounts the Algerian chart maps by default.
   Done when: a purchase receipt posts to the class 3 stock account the accountant chose.
-- [ ] **VPS setup.** Production bench, nginx, SSL, one subdomain per client, following dafter-cod docs/DEPLOY.md.
+- [ ] **VPS setup.** Production bench, nginx, SSL, one subdomain per client, following docs/DEPLOY.md (then dafter-cod's docs/DEPLOY.md for online sellers).
   Done when: a demo site is reachable over HTTPS on its own subdomain.
 - [ ] **Backups for real.** Daily off-server backup and a restore test on the VPS.
   Done when: `scripts/restore_test.sh` passes on the server.
@@ -88,8 +89,7 @@ Goal: real clients use it daily; their requests shape what comes next.
   Done when: the pilot records purchases, production and sales for 2 weeks without you.
 - [ ] **Fix what pilots hit.** Every pilot request goes to one of: configuration (do it), data (they do it), customization (quote it or say no). Two pilots asking for the same thing: move it into the sector template.
   Done when: each request has a line in DECISIONS.md or LATER.md.
-- [ ] **Move the remaining pieces from dafter-cod** (docs/SPLIT.md), one at a time, tests green after each: wilaya list, phone formatting, feature switches, deployment guide.
-  Done when: docs/SPLIT.md has nothing left in "Still to move".
+- [x] **Move the remaining pieces from dafter-cod** (docs/SPLIT.md): done 19 Oct 2026, moved ahead of plan while no client site is live. Feature switches stay in dafter-cod by decision.
 
 Checkpoint 28 Feb 2027: one pilot live and using it daily, one paying client who is a stranger. If not: stop selling the service, keep the skills.
 
