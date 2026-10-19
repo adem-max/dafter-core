@@ -77,6 +77,8 @@ class TestSetup(IntegrationTestCase):
 		)
 
 	def test_prepare_twice_changes_nothing(self):
+		# once to apply whatever a newer prepare() adds, then the real check
+		prepare(self.company, ABBR, self.settings.sector, self.settings.tax_regime)
 		counts = {doctype: frappe.db.count(doctype) for doctype in ("Warehouse", "Item Group", "UOM")}
 		prepare(self.company, ABBR, self.settings.sector, self.settings.tax_regime)
 		for doctype, count in counts.items():
@@ -95,6 +97,30 @@ class TestSetup(IntegrationTestCase):
 		self.assertTrue(template_with_rate("Sales Taxes and Charges Template", self.company, REDUCED_RATE))
 		self.assertTrue(template_with_rate("Purchase Taxes and Charges Template", self.company, REDUCED_RATE))
 		apply_tax_regime(self.company, self.settings.tax_regime)
+
+	def test_default_print_formats(self):
+		from dz_core.setup.new_client import set_default_print_formats
+
+		set_default_print_formats()
+		self.assertEqual(frappe.get_meta("Sales Invoice").default_print_format, "Facture DZ")
+		self.assertEqual(frappe.get_meta("Delivery Note").default_print_format, "Bon de livraison DZ")
+
+	def test_wizard_item_groups_removed_unless_used(self):
+		from dz_core.setup.sectors import WIZARD_ITEM_GROUPS, remove_wizard_item_groups
+
+		remove_wizard_item_groups()
+		for name in WIZARD_ITEM_GROUPS:
+			if frappe.db.exists("Item Group", name):
+				# kept only because an item (or a setting) still uses it
+				self.assertTrue(frappe.db.exists("Item", {"item_group": name}) or self.linked(name), name)
+		self.assertTrue(frappe.db.exists("Item Group", "Services"))
+		for group in SECTORS[self.settings.sector]["item_groups"]:
+			self.assertTrue(frappe.db.exists("Item Group", group), group)
+
+	def linked(self, item_group):
+		from frappe.desk.form.linked_with import get_linked_docs, get_linked_doctypes
+
+		return bool(get_linked_docs("Item Group", item_group, get_linked_doctypes("Item Group")))
 
 	def test_legal_fields(self):
 		for doctype, fields in {

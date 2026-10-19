@@ -298,8 +298,11 @@ def split_list(value):
 # ---------------------------------------------------------------- import
 
 
-def import_workbook(path, dry_run=1):
-	"""Check the workbook; with dry_run=0 and no errors, create everything."""
+def import_workbook(path, dry_run=1, opening_date=None):
+	"""Check the workbook; with dry_run=0 and no errors, create everything.
+
+	opening_date (YYYY-MM-DD, optional): the day the opening stock was counted.
+	Default today; a past date lets later movements (or a demo's history) follow it."""
 	from openpyxl import load_workbook
 
 	dry_run = cint(dry_run)
@@ -319,7 +322,7 @@ def import_workbook(path, dry_run=1):
 		print(json.dumps(result, indent=1, ensure_ascii=False))
 		return result
 
-	create(plan, settings, report)
+	create(plan, settings, report, opening_date)
 	frappe.db.commit()
 	result = report.as_dict()
 	print(json.dumps(result, indent=1, ensure_ascii=False))
@@ -470,7 +473,7 @@ def check(data, settings, report):
 	return plan
 
 
-def create(plan, settings, report):
+def create(plan, settings, report, opening_date=None):
 	for row in plan["suppliers"]:
 		doc = frappe.get_doc(
 			{
@@ -549,7 +552,7 @@ def create(plan, settings, report):
 		report.done("Nomenclature", doc.name)
 
 	if plan["stock"]:
-		create_opening_stock(plan["stock"], settings, report)
+		create_opening_stock(plan["stock"], settings, report, opening_date)
 
 
 def create_model(row, report):
@@ -604,8 +607,9 @@ def add_attribute_values(attribute, values):
 		doc.save(ignore_permissions=True)
 
 
-def create_opening_stock(rows, settings, report):
-	"""One Stock Reconciliation "Opening Stock" for every counted line."""
+def create_opening_stock(rows, settings, report, opening_date=None):
+	"""One Stock Reconciliation "Opening Stock" for every counted line, dated
+	opening_date when given (else today)."""
 	for row in rows:
 		if row["batch_no"] and not frappe.db.exists("Batch", row["batch_no"]):
 			frappe.get_doc(
@@ -614,6 +618,10 @@ def create_opening_stock(rows, settings, report):
 					"batch_id": row["batch_no"],
 					"item": row["item_code"],
 					"expiry_date": row["expiry_date"],
+					# made before the count: ERPNext picks the oldest batch first
+					# (FIFO by manufacturing date), so it must not look newer than
+					# what is produced after the opening date
+					"manufacturing_date": getdate(opening_date) if opening_date else None,
 				}
 			).insert(ignore_permissions=True)
 			report.done("Lot", row["batch_no"])
@@ -626,6 +634,8 @@ def create_opening_stock(rows, settings, report):
 			"company": settings.company,
 			"purpose": "Opening Stock",
 			"expense_account": opening_account(settings.company),
+			"posting_date": getdate(opening_date) if opening_date else getdate(),
+			"set_posting_time": 1 if opening_date else 0,
 			"items": [
 				{
 					"item_code": row["item_code"],

@@ -28,16 +28,16 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 Goal: you can set up a client and show it, without help.
 
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 30 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 40 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
-- [ ] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (today it is a manual step).
+- [x] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (done 19 Oct, with the demos).
   Done when: a new Sales Invoice prints as Facture DZ without touching Print Settings.
 - [ ] **Check the PDF in the browser.** Start the web server (`bench start`), open an invoice, click PDF.
   Done when: the PDF matches the sample (French amount in words, legal mentions, stamp box).
 - [ ] **French and Arabic labels.** Complete `dz_core/translations/` (started with the wilaya and contact labels moved from dafter-cod) for every label dz_core adds (fields, settings, messages), and copy dafter-cod's translation test so a forgotten label fails.
   Done when: a user with language Arabic sees Arabic labels on the fields dz_core adds.
-- [ ] **Clean up demo noise.** The setup wizard leaves English item groups (Products, Raw Material, Services...). Decide: hide, rename or keep, and do it in the sector template.
+- [x] **Clean up demo noise.** The setup wizard leaves English item groups (Products, Raw Material, Services...). Done 19 Oct: deleted when unused, Services kept (DECISIONS.md, Setup).
   Done when: the Item Group list shows only what the sector needs, or the choice is written in DECISIONS.md.
 
 ## Phase 2: demo sites and producer reports (9 Nov to 29 Nov)
@@ -46,10 +46,12 @@ Goal: a prospect can log in and see their own trade working.
 
 Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). Build first the one whose sector your first discovery interviews are in (Required Data doc, C5); both use real figures from one producer (C1, C2).
 
-- [ ] **Food demo.** A `dz_core.demo` module like dafter-cod's: one fictional artisanal food producer (jams, date paste, honey), régime réel, selling to shops and wholesalers. Recipes per batch, batch and expiry tracking, 3 months of purchases, production (work orders), sales and invoices.
+- [x] **Food demo.** A `dz_core.demo` module like dafter-cod's: one fictional artisanal food producer (jams, date paste, honey), régime réel, selling to shops and wholesalers. Recipes per batch, batch and expiry tracking, 3 months of purchases, production (work orders), sales and invoices.
   Done when: one command fills an empty site, running it twice adds nothing, and its invoices show TVA (19 %, and 9 % where the accountant says it applies).
-- [ ] **Clothing demo.** Same module, second company profile: one fictional confection workshop, IFU, selling wholesale to boutiques. Models with size and colour variants, fabric per piece, trims, work orders, 3 months of history.
+  Done 19 Oct (docs/DEMO.md): 19 % on every invoice; the 9 % products wait for the accountant (Required Data A8), then one reload.
+- [x] **Clothing demo.** Same module, second company profile: one fictional confection workshop, IFU, selling wholesale to boutiques. Models with size and colour variants, fabric per piece, trims, work orders, 3 months of history.
   Done when: one command fills an empty site, running it twice adds nothing, and a model's cost shows its fabric and trims.
+  Done 19 Oct: each finished batch's rate is fabric, thread, labels and bag plus labour (Stock Ledger), and follows the jersey price rise.
 - [ ] **Cost per product report.** Raw material cost per unit from the BOM, selling price, margin.
   Done when: the confiture in the food demo shows its cost from fruit, sugar and jar prices, and changing the sugar price changes the cost.
 - [ ] **Stock value report.** Value of stock per warehouse and per item group, at a chosen date.

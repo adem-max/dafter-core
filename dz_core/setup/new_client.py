@@ -12,6 +12,9 @@ warehouses and which group goes where), applies the tax regime, adds the
 opening-balance account and fills DZ Core Settings. Safe to run twice:
 whatever already exists is skipped.
 
+It also makes "Facture DZ" and "Bon de livraison DZ" the default print formats
+(unless the client already chose others).
+
 Stays manual, because it differs per client: the company's legal mentions
 (Company form, section "Mentions légales"), users, then the client's data
 through the import workbook (dz_core/imports).
@@ -21,6 +24,7 @@ prepare: it adds the COD warehouses, courier and settings on top.
 """
 
 import frappe
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 from frappe.utils import today
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU
@@ -30,12 +34,16 @@ from dz_core.setup.tax import IFU_NOTE, apply_tax_regime
 
 CHART_OF_ACCOUNTS = "Algerie - Plan Comptable General 2 avec code"
 
+# Our legal invoice and delivery note print by default (dz_core/dz_core/print_format)
+DEFAULT_PRINT_FORMATS = {"Sales Invoice": "Facture DZ", "Delivery Note": "Bon de livraison DZ"}
+
 
 def prepare(company, abbr, sector, tax_regime=IFU):
 	run_setup_wizard(company, abbr)
 	warehouses = apply_sector(sector, company)
 	apply_tax_regime(company, tax_regime)
 	opening_account(company)
+	set_default_print_formats()
 
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
@@ -45,6 +53,21 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	frappe.db.commit()
 	print(f"{company} is ready ({sector}, {tax_regime}).")
 	print("Next: legal mentions on the Company form, users, then the import workbook.")
+
+
+def set_default_print_formats():
+	"""Facture DZ and Bon de livraison DZ by default, unless the client already
+	chose one (Customize Form saves that choice as a Property Setter). ERPNext's
+	own default (v16: "Sales Invoice Modern with Images") is not a choice."""
+	for doctype, print_format in DEFAULT_PRINT_FORMATS.items():
+		chosen = frappe.db.exists(
+			"Property Setter",
+			{"doc_type": doctype, "property": "default_print_format", "is_system_generated": 0},
+		)
+		if not chosen:
+			make_property_setter(
+				doctype, None, "default_print_format", print_format, "Data", for_doctype=True
+			)
 
 
 def run_setup_wizard(company, abbr):

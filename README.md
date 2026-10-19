@@ -29,6 +29,7 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test (apps on top add their records by hook) |
 | Optional features | `dz_core/features.py`, `dz-features` command | What each client may switch on, per site. Apps declare their features with a `dz_features` hook (dz_cod has four); the hub (dz_hub) sells and applies them |
 | Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
+| Demo sites | `dz_core/demo/`, `docs/DEMO.md` | A food producer (régime réel) and a clothing workshop (IFU) with 13 weeks of history, set up through `prepare()` and the import workbook; a 10-minute script for prospects |
 
 ## Set up a new client
 
@@ -44,9 +45,11 @@ Tax regimes: `IFU`, `Régime réel`.
 
 Full server guide (Ubuntu, SSL, backups, the 2-hour checklist): `docs/DEPLOY.md`.
 
+`prepare` also makes "Facture DZ" and "Bon de livraison DZ" the default print
+formats and removes the English item groups ERPNext's wizard leaves unused.
+
 Then, by hand: the legal mentions on the Company form, the company address,
-users, and the default print formats (Sales Invoice: "Facture DZ", Delivery
-Note: "Bon de livraison DZ", in Print Format Builder or Customize Form).
+and users.
 
 ## Import the client's data
 
@@ -57,7 +60,22 @@ bench --site client1.localhost execute dz_core.imports.workbook.make_template --
 bench --site client1.localhost execute dz_core.imports.workbook.import_workbook --kwargs "{'path': '/tmp/client1.xlsx'}"
 # 3. import for real once the check shows no errors
 bench --site client1.localhost execute dz_core.imports.workbook.import_workbook --kwargs "{'path': '/tmp/client1.xlsx', 'dry_run': 0}"
+# opening stock counted on another day: add 'opening_date': '2026-11-01'
 ```
+
+Clothing models and the stock of their size/colour variants go in two files:
+the models first, then the opening count (a variant must exist before its
+stock line is checked).
+
+## Demo sites
+
+```bash
+bench --site food-demo.localhost execute dz_core.demo.loader.load --kwargs "{'profile': 'food'}"
+bench --site atelier-demo.localhost execute dz_core.demo.loader.load --kwargs "{'profile': 'clothing'}"
+```
+
+On dedicated sites with ERPNext + dz_core only. Logins, what each demo shows,
+and a 10-minute script for prospects: `docs/DEMO.md`.
 
 ## Not done yet (full plan: ROADMAP.md)
 
@@ -72,5 +90,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 30 tests (6 unit + 24 integration)
+bench --site test.localhost run-tests --app dz_core     # 40 tests (13 unit + 27 integration)
 ```
