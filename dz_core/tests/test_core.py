@@ -77,6 +77,8 @@ class TestSetup(IntegrationTestCase):
 		)
 
 	def test_prepare_twice_changes_nothing(self):
+		# once to apply whatever a newer prepare() adds, then the real check
+		prepare(self.company, ABBR, self.settings.sector, self.settings.tax_regime)
 		counts = {doctype: frappe.db.count(doctype) for doctype in ("Warehouse", "Item Group", "UOM")}
 		prepare(self.company, ABBR, self.settings.sector, self.settings.tax_regime)
 		for doctype, count in counts.items():
@@ -95,6 +97,54 @@ class TestSetup(IntegrationTestCase):
 		self.assertTrue(template_with_rate("Sales Taxes and Charges Template", self.company, REDUCED_RATE))
 		self.assertTrue(template_with_rate("Purchase Taxes and Charges Template", self.company, REDUCED_RATE))
 		apply_tax_regime(self.company, self.settings.tax_regime)
+
+	def test_default_print_formats(self):
+		from dz_core.setup.new_client import set_default_print_formats
+
+		set_default_print_formats()
+		self.assertEqual(frappe.get_meta("Sales Invoice").default_print_format, "Facture DZ")
+		self.assertEqual(frappe.get_meta("Delivery Note").default_print_format, "Bon de livraison DZ")
+
+	def test_cancelled_invoices_can_be_printed(self):
+		from dz_core.setup.new_client import allow_printing_cancelled
+
+		allow_printing_cancelled()
+		self.assertTrue(frappe.db.get_single_value("Print Settings", "allow_print_for_cancelled"))
+
+	def test_algerian_address_prints_without_the_country(self):
+		from frappe.contacts.doctype.address.address import get_address_display
+
+		from dz_core.setup.new_client import set_address_template
+
+		set_address_template()
+		text = get_address_display(
+			{
+				"address_line1": "12 rue Larbi Ben M'hidi",
+				"city": "Boufarik",
+				"state": "Blida",
+				"country": "Algeria",
+			}
+		)
+		self.assertIn("Boufarik", text)
+		self.assertIn("Blida", text)
+		self.assertNotIn("Algeria", text)
+
+	def test_wizard_item_groups_removed_unless_used(self):
+		from dz_core.setup.sectors import WIZARD_ITEM_GROUPS, remove_wizard_item_groups
+
+		remove_wizard_item_groups()
+		for name in WIZARD_ITEM_GROUPS:
+			if frappe.db.exists("Item Group", name):
+				# kept only because an item (or a setting) still uses it
+				self.assertTrue(frappe.db.exists("Item", {"item_group": name}) or self.linked(name), name)
+		self.assertTrue(frappe.db.exists("Item Group", "Services"))
+		for group in SECTORS[self.settings.sector]["item_groups"]:
+			self.assertTrue(frappe.db.exists("Item Group", group), group)
+
+	def linked(self, item_group):
+		from frappe.desk.form.linked_with import get_linked_docs, get_linked_doctypes
+
+		return bool(get_linked_docs("Item Group", item_group, get_linked_doctypes("Item Group")))
 
 	def test_legal_fields(self):
 		for doctype, fields in {
@@ -148,7 +198,18 @@ class TestWorkbook(IntegrationTestCase):
 		def fill(wb):
 			wb["Fournisseurs"].append([f"Fournisseur {t}", "0550000000", "Rue 1", "Médéa", ""])
 			wb["Clients"].append(
-				[f"Client {t}", "0661000000", "", "Rue 2", "Blida", "Blida", "000016001234567", ""]
+				[
+					f"Client {t}",
+					"0661000000",
+					"",
+					"Rue 2",
+					"Blida",
+					"Blida",
+					"000016001234567",
+					"",
+					"000016001234568",
+					"16000000001",
+				]
 			)
 			wb["Articles"].append([sugar, "Sucre", "Matières premières", "Kg", 120, None, "Non", "Non", None])
 			wb["Articles"].append(
@@ -174,10 +235,11 @@ class TestWorkbook(IntegrationTestCase):
 		self.assertEqual(result["errors"], [])
 		self.assertTrue(frappe.db.get_value("Item", jam, "has_batch_no"))
 		customer = frappe.db.get_value(
-			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya"]
+			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya", "dz_nis", "dz_ai"]
 		)
-		self.assertEqual(customer, ("0661000000", "09 - Blida"))
+		self.assertEqual(customer, ("0661000000", "09 - Blida", "000016001234568", "16000000001"))
 		self.assertEqual(frappe.db.count("Item", {"variant_of": model}), 4)
+		self.assertTrue(frappe.db.exists("Item", {"variant_of": model, "item_name": "T-shirt L Orange"}))
 		self.assertTrue(
 			frappe.db.exists("Item Attribute Value", {"parent": "Couleur", "attribute_value": "Orange"})
 		)
@@ -194,6 +256,18 @@ class TestWorkbook(IntegrationTestCase):
 
 		again = import_workbook(path, dry_run=0)
 		self.assertEqual(again["created"], {})
+
+	def test_file_from_an_older_template_still_imports(self):
+		# NIS and AI were added to "Clients" later: a file without them is fine
+		name = f"Client {self.tag} ancien"
+
+		def fill(wb):
+			wb["Clients"].delete_cols(9, 2)
+			wb["Clients"].append([name, "0661000001", "", "Rue 3", "Blida", "Blida", "", ""])
+
+		result = import_workbook(self.workbook(fill), dry_run=0)
+		self.assertEqual(result["errors"], [])
+		self.assertTrue(frappe.db.exists("Customer", {"customer_name": name}))
 
 
 class TestPrintFormat(IntegrationTestCase):

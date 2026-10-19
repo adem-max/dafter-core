@@ -35,7 +35,7 @@ SECTORS = {
 		"item_groups": ["Matières premières", "Emballages", "Produits finis"],
 		# Units the trade counts in, on top of ERPNext's own (Kg, Gram, Litre...)
 		# (name, whole number only?)
-		"uoms": [("Pot", 1), ("Flacon", 1), ("Sachet", 1), ("Carton", 1), ("Bocal", 1)],
+		"uoms": [("Pot", 1), ("Flacon", 1), ("Sachet", 1), ("Carton", 1), ("Bocal", 1), ("Barquette", 1)],
 		# Batch and expiry tracking: applied by the importer to items of these groups
 		"batch_groups": ["Matières premières", "Produits finis"],
 		"item_attributes": {},
@@ -45,7 +45,7 @@ SECTORS = {
 	},
 	CLOTHING: {
 		"item_groups": ["Tissus", "Fournitures", "Emballages", "Produits finis"],
-		"uoms": [("Pièce", 1), ("Rouleau", 1), ("Carton", 1)],
+		"uoms": [("Pièce", 1), ("Rouleau", 1), ("Carton", 1), ("Cône", 0)],
 		"batch_groups": [],
 		# One BOM per model (template item), the variants carry size and colour
 		"item_attributes": {
@@ -78,7 +78,27 @@ def apply_sector(sector, company):
 	warehouses = create_warehouses(company)
 	setup_company_warehouses(company, warehouses)
 	setup_item_group_warehouses(company, template["item_groups"], warehouses)
+	remove_wizard_item_groups()
 	return warehouses
+
+
+# Item groups ERPNext's setup wizard creates in English. They confuse a client
+# choosing a group next to the sector's French ones. "Services" stays: a
+# producer still bills services, and the word is the same in French.
+WIZARD_ITEM_GROUPS = ["Products", "Raw Material", "Sub Assemblies", "Consumable"]
+
+
+def remove_wizard_item_groups():
+	"""Delete the wizard's English groups nobody uses. A group still used by an
+	item (or anything else) is kept: Frappe refuses to delete a linked record."""
+	for name in WIZARD_ITEM_GROUPS:
+		if not frappe.db.exists("Item Group", name) or frappe.db.exists("Item", {"item_group": name}):
+			continue
+		try:
+			frappe.delete_doc("Item Group", name, ignore_permissions=True)
+		except frappe.LinkExistsError:
+			frappe.clear_messages()
+			frappe.logger("dz_core").info(f"Item Group {name} kept: still linked")
 
 
 def create_item_groups(names):

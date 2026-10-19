@@ -59,6 +59,9 @@ SHEETS = {
 		("Wilaya", "wilaya", False),
 		("NIF", "nif", False),
 		("RC", "rc", False),
+		# the buyer's NIS and tax article are legal mentions too (decree 05-468)
+		("NIS", "nis", False),
+		("Article d'imposition (AI)", "ai", False),
 	],
 	"Articles": [
 		("Code", "code", True),
@@ -106,6 +109,8 @@ EXAMPLES = {
 		"12 rue Larbi Ben M'hidi",
 		"Blida",
 		"Blida",
+		"",
+		"",
 		"",
 		"",
 	],
@@ -228,15 +233,20 @@ def read_rows(wb, sheet_name, report):
 	ws = wb[sheet_name]
 	header = [str(cell.value or "").strip() for cell in ws[1]]
 	positions = {}
-	for text, key, _required in columns:
+	for text, key, required in columns:
 		if text not in header:
+			if not required:
+				continue  # an optional column added after the client's template was made
 			report.error(sheet_name, 1, f"colonne « {text} » introuvable (ne changez pas les titres)")
 			return []
 		positions[key] = header.index(text)
 
 	rows = []
 	for number, values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-		row = {key: clean(values[index] if index < len(values) else None) for key, index in positions.items()}
+		row = {key: None for _text, key, _required in columns}
+		row.update(
+			{key: clean(values[index] if index < len(values) else None) for key, index in positions.items()}
+		)
 		if not any(value not in (None, "") for value in row.values()):
 			continue
 		if str(next(iter(row.values())) or "").upper().startswith(EXAMPLE):
@@ -298,8 +308,11 @@ def split_list(value):
 # ---------------------------------------------------------------- import
 
 
-def import_workbook(path, dry_run=1):
-	"""Check the workbook; with dry_run=0 and no errors, create everything."""
+def import_workbook(path, dry_run=1, opening_date=None):
+	"""Check the workbook; with dry_run=0 and no errors, create everything.
+
+	opening_date (YYYY-MM-DD, optional): the day the opening stock was counted.
+	Default today; a past date lets later movements (or a demo's history) follow it."""
 	from openpyxl import load_workbook
 
 	dry_run = cint(dry_run)
@@ -319,7 +332,7 @@ def import_workbook(path, dry_run=1):
 		print(json.dumps(result, indent=1, ensure_ascii=False))
 		return result
 
-	create(plan, settings, report)
+	create(plan, settings, report, opening_date)
 	frappe.db.commit()
 	result = report.as_dict()
 	print(json.dumps(result, indent=1, ensure_ascii=False))
@@ -470,7 +483,7 @@ def check(data, settings, report):
 	return plan
 
 
-def create(plan, settings, report):
+def create(plan, settings, report, opening_date=None):
 	for row in plan["suppliers"]:
 		doc = frappe.get_doc(
 			{
@@ -504,6 +517,8 @@ def create(plan, settings, report):
 				"country": "Algeria",
 				"dz_nif": row["nif"],
 				"dz_rc": row["rc"],
+				"dz_nis": row["nis"],
+				"dz_ai": row["ai"],
 			}
 		).insert(ignore_permissions=True)
 		report.done("Client", doc.name)
@@ -549,7 +564,7 @@ def create(plan, settings, report):
 		report.done("Nomenclature", doc.name)
 
 	if plan["stock"]:
-		create_opening_stock(plan["stock"], settings, report)
+		create_opening_stock(plan["stock"], settings, report, opening_date)
 
 
 def create_model(row, report):
@@ -577,6 +592,8 @@ def create_model(row, report):
 	for size in row["sizes"]:
 		for colour in row["colours"]:
 			variant = create_variant(template.name, {"Taille": size, "Couleur": colour})
+			# ERPNext names it "<model>-XL-BLE" (abbreviations): invoices show the words
+			variant.item_name = variant.description = f"{row['name']} {size} {colour}"
 			variant.standard_rate = row["selling"] or 0
 			variant.insert(ignore_permissions=True)
 			report.done("Variante", variant.name)
@@ -604,8 +621,9 @@ def add_attribute_values(attribute, values):
 		doc.save(ignore_permissions=True)
 
 
-def create_opening_stock(rows, settings, report):
-	"""One Stock Reconciliation "Opening Stock" for every counted line."""
+def create_opening_stock(rows, settings, report, opening_date=None):
+	"""One Stock Reconciliation "Opening Stock" for every counted line, dated
+	opening_date when given (else today)."""
 	for row in rows:
 		if row["batch_no"] and not frappe.db.exists("Batch", row["batch_no"]):
 			frappe.get_doc(
@@ -614,6 +632,10 @@ def create_opening_stock(rows, settings, report):
 					"batch_id": row["batch_no"],
 					"item": row["item_code"],
 					"expiry_date": row["expiry_date"],
+					# made before the count: ERPNext picks the oldest batch first
+					# (FIFO by manufacturing date), so it must not look newer than
+					# what is produced after the opening date
+					"manufacturing_date": getdate(opening_date) if opening_date else None,
 				}
 			).insert(ignore_permissions=True)
 			report.done("Lot", row["batch_no"])
@@ -626,6 +648,8 @@ def create_opening_stock(rows, settings, report):
 			"company": settings.company,
 			"purpose": "Opening Stock",
 			"expense_account": opening_account(settings.company),
+			"posting_date": getdate(opening_date) if opening_date else getdate(),
+			"set_posting_time": 1 if opening_date else 0,
 			"items": [
 				{
 					"item_code": row["item_code"],
