@@ -44,12 +44,8 @@ Goal: you can set up a client and show it, without help.
 
 Goal: a prospect can log in and see their own trade working.
 
-Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). Build first the one whose sector your first discovery interviews are in (Required Data doc, C5); both use real figures from one producer (C1, C2).
-
-- [ ] **Food demo.** A `dz_core.demo` module like dafter-cod's: one fictional artisanal food producer (jams, date paste, honey), régime réel, selling to shops and wholesalers. Recipes per batch, batch and expiry tracking, 3 months of purchases, production (work orders), sales and invoices.
-  Done when: one command fills an empty site, running it twice adds nothing, and its invoices show TVA (19 %, and 9 % where the accountant says it applies).
-- [ ] **Clothing demo.** Same module, second company profile: one fictional confection workshop, IFU, selling wholesale to boutiques. Models with size and colour variants, fabric per piece, trims, work orders, 3 months of history.
-  Done when: one command fills an empty site, running it twice adds nothing, and a model's cost shows its fabric and trims.
+- [ ] **Demo loader for each sector.** A `dz_core.demo` module like dafter-cod's: a fake honey/cosmetics producer and a fake clothing workshop, with 3 months of purchases, production (work orders), sales and invoices.
+  Done when: one command fills an empty site, and running it twice adds nothing.
 - [ ] **Cost per product report.** Raw material cost per unit from the BOM, selling price, margin.
   Done when: the confiture in the food demo shows its cost from fruit, sugar and jar prices, and changing the sugar price changes the cost.
 - [ ] **Stock value report.** Value of stock per warehouse and per item group, at a chosen date.
@@ -100,8 +96,6 @@ Checkpoint 28 Feb 2027: one pilot live and using it daily, one paying client who
 
 ## Later (not before a client asks)
 
-- Encre & Fil, the COD demo in dafter-cod, also produces: BOMs (blank t-shirt + print) and work orders on top of its orders, to show Pack Atelier + Vente en ligne on one site. First of these once Phase 2 is done, or sooner if an online seller who makes their products is in the pipeline
-- Cosmetics demo data on the food template (same mechanics: recipes by weight, batches, expiry) when a cosmetics prospect is in the pipeline
 - A third sector template (bakery, carpentry, printing...) when a client in it signs
 - Per-size BOMs for precise clothing costing (paid extra)
 - Full SCF financial statements and liasse fiscale, validated by an accountant
