@@ -6,7 +6,7 @@
  "doctype": "Report",
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2026-10-20 10:00:00.000000",
+ "modified": "2026-10-20 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "DZ Core",
  "name": "Valeur du stock",
@@ -17,8 +17,6 @@
  "report_type": "Script Report",
  "roles": [
   {"role": "Stock User"},
-  {"role": "Stock Manager"},
-  {"role": "Accounts User"},
   {"role": "Accounts Manager"}
  ]
 }

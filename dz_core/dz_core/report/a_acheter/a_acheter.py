@@ -5,6 +5,9 @@ réapprovisionnement" and "Quantité à commander") or the item's form. A row is
 "À commander" when stock plus what is already ordered stays under the level
 (ERPNext's own rule), and "Commandé" when an order on the way covers it.
 ERPNext's automatic material requests stay off (DECISIONS.md).
+
+The chart (stock against level, per material) is the low stock alert on the
+Atelier home page (dashboard chart "Atelier To Buy").
 """
 
 import frappe
@@ -23,7 +26,7 @@ def execute(filters=None):
 	rows = get_rows(filters)
 	if filters.only_to_order:
 		rows = [row for row in rows if row["status"] == TO_ORDER]
-	return get_columns(), rows, None, None, get_summary(rows)
+	return get_columns(), rows, None, get_chart(rows), get_summary(rows)
 
 
 def get_columns():
@@ -107,6 +110,21 @@ def usual_supplier(item_code):
 def count_under_level():
 	"""For the home page: how many materials are under their reorder level."""
 	return len(get_rows(frappe._dict(company=get_company({}))))
+
+
+def get_chart(rows):
+	"""Bars: what is in stock against the level, for each material under it."""
+	return {
+		"data": {
+			"labels": [row["item_name"] for row in rows],
+			"datasets": [
+				{"name": _("En stock"), "values": [flt(row["actual"]) for row in rows]},
+				{"name": _("Seuil"), "values": [flt(row["level"]) for row in rows]},
+			],
+		},
+		"type": "bar",
+		"colors": ["#E24C4C", "#C0C6CC"],
+	}
 
 
 def get_summary(rows):

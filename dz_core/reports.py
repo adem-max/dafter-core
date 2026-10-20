@@ -4,6 +4,8 @@ counters of the Atelier home page."""
 import frappe
 from frappe.utils import flt
 
+TO_BUY_REPORT = "A acheter"
+
 LAST_PURCHASE = "Dernier prix d'achat"
 STOCK_VALUE = "Coût moyen en stock"
 
@@ -15,6 +17,18 @@ def get_company(filters):
 		or frappe.db.get_single_value("DZ Core Settings", "company")
 		or frappe.defaults.get_user_default("Company")
 	)
+
+
+@frappe.whitelist()
+def get_to_buy_card(filters=None):
+	"""Number card "À acheter" on the Atelier home page: how many materials are
+	under their reorder level. `filters` is sent by every Custom number card;
+	not used here. A click on the card opens the report."""
+	from dz_core.dz_core.report.a_acheter.a_acheter import count_under_level
+
+	if not frappe.get_cached_doc("Report", TO_BUY_REPORT).is_permitted():
+		raise frappe.PermissionError
+	return {"value": count_under_level(), "fieldtype": "Int", "route": ["query-report", TO_BUY_REPORT]}
 
 
 class Rates:

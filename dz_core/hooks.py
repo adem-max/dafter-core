@@ -17,6 +17,20 @@ app_license = "mit"
 
 required_apps = ["erpnext"]
 
+# Where to land after login: the Atelier home page (dz_core/dz_core/workspace/atelier).
+# Atelier is docked on ERPNext's rail (dz_core/dock), so Frappe keeps it off the
+# apps screen, but this route is used when dz_core is the site's default app
+# (System Settings > default_app, set by new_client.prepare and the demo loader).
+add_to_apps_screen = [
+	{
+		"name": "dz_core",
+		"logo": "/assets/dz_core/images/atelier-logo.svg",
+		"title": "Atelier",
+		"route": "/desk/atelier",
+		"has_permission": "erpnext.check_app_permission",
+	}
+]
+
 # Custom fields for the legal mentions (dz_core/setup/custom_fields.py)
 after_install = "dz_core.setup.install.after_install"
 after_migrate = "dz_core.setup.install.after_migrate"

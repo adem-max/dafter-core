@@ -28,7 +28,7 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 Goal: you can set up a client and show it, without help.
 
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 53 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 59 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [x] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (done 19 Oct, with the demos).
@@ -61,11 +61,12 @@ Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). 
 - [x] **Sales per month report.** Per product and per customer, with the month-on-month change.
   Done when: it opens on the demo site with 3 months of data and the totals match the invoices.
   Done 20 Oct: report "Ventes par mois" (July to October); totals equal the invoices on both demos (7 360 570 and 3 848 950 DA HT). The change compares the last two full months.
-- [ ] **Low stock alert.** Reorder levels from the import workbook (new optional column), shown on a simple workspace.
+- [x] **Low stock alert.** Reorder levels from the import workbook (new optional column), shown on a simple workspace.
   Done when: a raw material below its level appears on the workspace.
-  20 Oct: the workbook columns and the report "À acheter" are done; the workspace counter comes with the Atelier home page.
-- [ ] **Workspace "Atelier".** One home page: what to produce, what to buy, today's sales, the three reports.
+  Done 20 Oct: counter "À acheter" and chart "À acheter : sous le seuil" on the Atelier home page, naming each material under its level (food demo: 2, clothing demo: 3).
+- [x] **Workspace "Atelier".** One home page: what to produce, what to buy, today's sales, the three reports.
   Done when: a new user lands there after login and can reach every daily task in one click.
+  Done 20 Oct: the 6 demo logins (gérant, production/atelier, ventes in Arabic) land on /desk/atelier; each sees the counters, charts and links of their role, without error.
 
 Checkpoint 29 Nov: demo sites ready to show, 8+ discovery conversations held (launch plan).
 

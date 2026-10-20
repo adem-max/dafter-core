@@ -30,6 +30,7 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Optional features | `dz_core/features.py`, `dz-features` command | What each client may switch on, per site. Apps declare their features with a `dz_features` hook (dz_cod has four); the hub (dz_hub) sells and applies them |
 | Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
 | Producer reports | `dz_core/dz_core/report/`, `dz_core/reports.py` | "Coût de revient" (each product's materials at today's prices, labour, margin), "À produire" (orders vs stock and work orders), "À acheter" (under the reorder level), "Valeur du stock" (per warehouse and item group at a date), "Ventes par mois" (per product, customer or group, with the change) |
+| Atelier home page | `dz_core/dz_core/workspace/atelier/`, `number_card/`, `dashboard_chart/`, `sidebar/atelier/`, `dz_core/dock/` | Where users land after login: today's sales, orders to deliver, work in progress, materials to buy, overdue invoices; sales per month, stock value per warehouse and the materials under their level; one click to every daily document and the reports. A factory icon on ERPNext's left rail opens its menu |
 | Demo sites | `dz_core/demo/`, `docs/DEMO.md` | A food producer (régime réel) and a clothing workshop (IFU) with 13 weeks of history, set up through `prepare()` and the import workbook; a 10-minute script for prospects |
 
 ## Set up a new client
@@ -48,8 +49,9 @@ Full server guide (Ubuntu, SSL, backups, the 2-hour checklist): `docs/DEPLOY.md`
 
 `prepare` also makes "Facture DZ" and "Bon de livraison DZ" the default print
 formats, lets cancelled invoices print (FACTURE ANNULÉE), prints Algerian
-addresses in French without the country, and removes the English item groups
-ERPNext's wizard leaves unused.
+addresses in French without the country, removes the English item groups
+ERPNext's wizard leaves unused, and makes the Atelier home page the page users
+land on after login (an online seller's dz_cod setup then makes it COD).
 
 Then, by hand: the legal mentions on the Company form, the company address,
 and users.

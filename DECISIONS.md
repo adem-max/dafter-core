@@ -198,6 +198,21 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **"À produire" lists every ordered product**, with what stock and work
   orders already cover: a workshop that makes ahead sees its orders covered
   rather than an empty page.
+- **The Atelier home page is built like dz_cod's COD page** (workspace,
+  number cards, dashboard charts, sidebar and a Dock mounted on ERPNext's
+  rail, all shipped as files and loaded by `bench migrate`), and `prepare()`
+  makes it the landing page (`default_app = dz_core`). A site with dz_cod
+  runs dz_cod's setup after, which makes COD the landing page; both menus
+  stay on the rail.
+- **The low stock alert is a chart, not just a number**: "À acheter" now
+  returns a chart (stock against level, per material) and the home page shows
+  it, so the materials under their level are named on the page.
+- **Who sees what on the home page is Frappe's own rule**: a card or chart
+  shows when the user can read its doctype or report. So "Valeur du stock" is
+  given only to the roles that can read the Stock Ledger (Stock User,
+  Accounts Manager), and the "À acheter" counter is keyed on Material Request
+  (buyers, stock, production): otherwise the sales login got an error popup
+  and a counter stuck on loading.
 - **On a site with dz_cod, every sales order goes through the COD checks**
   (phone, wilaya, address), wholesale ones included: dz_cod has no "not a
   COD order" path yet. To decide before a producer who also sells online
