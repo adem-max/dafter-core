@@ -29,7 +29,7 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test (apps on top add their records by hook) |
 | Optional features | `dz_core/features.py`, `dz-features` command | What each client may switch on, per site. Apps declare their features with a `dz_features` hook (dz_cod has four); the hub (dz_hub) sells and applies them |
 | Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
-| Producer reports | `dz_core/dz_core/report/`, `dz_core/reports.py` | "Coût de revient" (each product's materials at today's prices, labour, margin), "À produire" (orders vs stock and work orders), "À acheter" (under the reorder level) |
+| Producer reports | `dz_core/dz_core/report/`, `dz_core/reports.py` | "Coût de revient" (each product's materials at today's prices, labour, margin), "À produire" (orders vs stock and work orders), "À acheter" (under the reorder level), "Valeur du stock" (per warehouse and item group at a date), "Ventes par mois" (per product, customer or group, with the change) |
 | Demo sites | `dz_core/demo/`, `docs/DEMO.md` | A food producer (régime réel) and a clothing workshop (IFU) with 13 weeks of history, set up through `prepare()` and the import workbook; a 10-minute script for prospects |
 
 ## Set up a new client
@@ -96,5 +96,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 46 tests (13 unit + 33 integration)
+bench --site test.localhost run-tests --app dz_core     # 53 tests (13 unit + 40 integration)
 ```

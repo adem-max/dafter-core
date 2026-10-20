@@ -10,10 +10,12 @@ import frappe
 from frappe import _
 from frappe.utils import flt, today
 
+from dz_core.reports import get_company
+
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
-	filters.company = filters.company or frappe.db.get_single_value("DZ Core Settings", "company")
+	filters.company = get_company(filters)
 	filters.date = filters.date or today()
 	rows = get_rows(filters)
 	return get_columns(), rows, None, get_chart(rows), get_summary(rows)
@@ -61,6 +63,7 @@ def get_rows(filters):
 	)
 
 	groups = {}  # (warehouse, item group) -> row
+	in_stock = set()  # item codes, once even if in two warehouses
 	for line in lines:
 		row = groups.setdefault(
 			(line.warehouse, line.item_group),
@@ -70,6 +73,7 @@ def get_rows(filters):
 		row["value"] += flt(line.value)
 		if flt(line.qty, 6) or flt(line.value, 2):
 			row["items"] += 1
+			in_stock.add(line.item_code)
 
 	warehouses = {}  # warehouse -> its row and its item groups
 	for row in groups.values():
@@ -95,7 +99,7 @@ def get_rows(filters):
 		rows.append(
 			{
 				"warehouse": _("Total"),
-				"items": sum(row["items"] for row in rows if not row["indent"]),
+				"items": len(in_stock),
 				"qty": sum(row["qty"] for row in rows if not row["indent"]),
 				"value": total,
 				"share": 100 if total else 0,
