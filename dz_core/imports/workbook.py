@@ -24,6 +24,8 @@ Rules:
 - Opening stock can come in several files (raw materials one day, finished
   goods the next), but an item that already has stock in a warehouse is
   refused there: after go-live, counts are corrected in ERPNext itself.
+- A lot number belongs to one item: ERPNext names every batch by its number
+  alone, so two products cannot share "L2026-10".
 """
 
 import datetime
@@ -40,6 +42,10 @@ from dz_core.setup.wilayas import find_wilaya
 EXAMPLE = "EXEMPLE"
 YES = {"oui", "o", "yes", "y", "1", "x"}
 NO = {"non", "n", "no", "0", ""}
+# ERPNext submits a Stock Reconciliation of more than 100 lines in a background
+# job, and a failure there goes unnoticed: the opening stock is posted 100 lines
+# at a time
+MAX_LINES = 100
 
 # Sheet name -> columns (header text, key, required)
 SHEETS = {
@@ -297,11 +303,16 @@ def as_date(value, sheet, number, report):
 
 
 def as_number(value, sheet, number, report, label, positive=True):
-	try:
-		result = flt(str(value).replace(" ", "").replace(",", ".")) if isinstance(value, str) else flt(value)
-	except Exception:
-		report.error(sheet, number, f"{label} « {value} » n'est pas un nombre")
-		return 0
+	"""A cell as a number: 1800, "1 800,50" or "1800.5". Text that is not a
+	number is an error (flt() alone would quietly turn it into 0)."""
+	if isinstance(value, str):
+		try:
+			result = float("".join(value.split()).replace(",", "."))  # any space, also non-breaking
+		except ValueError:
+			report.error(sheet, number, f"{label} « {value} » n'est pas un nombre")
+			return 0
+	else:
+		result = flt(value)
 	if positive and result <= 0:
 		report.error(sheet, number, f"{label} doit être supérieur à 0")
 	return result
@@ -309,6 +320,23 @@ def as_number(value, sheet, number, report, label, positive=True):
 
 def split_list(value):
 	return [part.strip() for part in str(value or "").split(",") if part.strip()]
+
+
+def unit_converts(item_code, uom, stock_uom):
+	"""Can ERPNext turn `uom` into the item's stock unit: the same unit, a
+	conversion on the item (or its model), or a general one (Kg and Gram)?
+	Without one, a recipe line silently counts 1 for 1."""
+	from erpnext.stock.doctype.item.item import get_uom_conv_factor
+
+	if not stock_uom or uom == stock_uom:
+		return True
+	items = [item_code, frappe.db.get_value("Item", item_code, "variant_of")]
+	if frappe.db.exists(
+		"UOM Conversion Detail",
+		{"parenttype": "Item", "parent": ["in", [code for code in items if code]], "uom": uom},
+	):
+		return True
+	return bool(get_uom_conv_factor(uom, stock_uom))
 
 
 # ---------------------------------------------------------------- import
@@ -353,13 +381,20 @@ def check(data, settings, report):
 	known_uoms = set(frappe.get_all("UOM", pluck="name"))
 	known_groups = set(frappe.get_all("Item Group", pluck="name"))
 
-	for _number, row in data["Fournisseurs"]:
-		if frappe.db.exists("Supplier", {"supplier_name": row["name"]}):
+	names = set()
+	for number, row in data["Fournisseurs"]:
+		if twice(names, row["name"]):
+			report.error("Fournisseurs", number, f"fournisseur « {row['name']} » en double dans le fichier")
+		elif frappe.db.exists("Supplier", {"supplier_name": row["name"]}):
 			report.skip("Fournisseur", row["name"])
 		else:
 			plan["suppliers"].append(row)
 
+	names = set()
 	for number, row in data["Clients"]:
+		if twice(names, row["name"]):
+			report.error("Clients", number, f"client « {row['name']} » en double dans le fichier")
+			continue
 		if row["address"] and not row["city"]:
 			report.error("Clients", number, "Ville à remplir quand l'adresse est remplie")
 		if row["wilaya"] and not find_wilaya(row["wilaya"]):
@@ -373,6 +408,7 @@ def check(data, settings, report):
 		frappe.db.get_single_value("Stock Settings", "enable_serial_and_batch_no_for_item")
 	)
 	codes_in_file = set()
+	units_in_file = {}  # item code -> stock unit, for the recipe lines
 	for sheet, kind in (("Articles", "items"), ("Modèles", "models")):
 		for number, row in data[sheet]:
 			code = str(row["code"])
@@ -380,6 +416,7 @@ def check(data, settings, report):
 				report.error(sheet, number, f"code « {code} » en double dans le fichier")
 				continue
 			codes_in_file.add(code)
+			units_in_file[code] = row["uom"]
 			if row["group"] not in known_groups:
 				report.error(sheet, number, f"groupe « {row['group']} » inconnu")
 			if row["uom"] not in known_uoms:
@@ -399,6 +436,7 @@ def check(data, settings, report):
 				for key, label in (
 					("buying", "Prix d'achat"),
 					("selling", "Prix de vente"),
+					("shelf_life", "Durée de conservation"),
 					("reorder_level", "Seuil de réapprovisionnement"),
 					("reorder_qty", "Quantité à commander"),
 				):
@@ -418,6 +456,9 @@ def check(data, settings, report):
 	def item_exists(code):
 		return code in codes_in_file or frappe.db.exists("Item", code)
 
+	def stock_unit(code):
+		return units_in_file.get(code) or frappe.db.get_value("Item", code, "stock_uom")
+
 	boms = {}
 	for number, row in data["Nomenclatures"]:
 		product, component = str(row["product"]), str(row["component"])
@@ -426,6 +467,17 @@ def check(data, settings, report):
 				report.error("Nomenclatures", number, f"article « {code} » introuvable")
 		if row["uom"] and row["uom"] not in known_uoms:
 			report.error("Nomenclatures", number, f"unité « {row['uom']} » inconnue")
+		elif (
+			row["uom"]
+			and item_exists(component)
+			and not unit_converts(component, row["uom"], stock_unit(component))
+		):
+			report.error(
+				"Nomenclatures",
+				number,
+				f"« {component} » se compte en {stock_unit(component)} : rien ne convertit {row['uom']} "
+				f"en {stock_unit(component)} (donnez la quantité en {stock_unit(component)})",
+			)
 		qty = as_number(row["qty"], "Nomenclatures", number, report, "Quantité")
 		product_qty = as_number(row["product_qty"], "Nomenclatures", number, report, "Quantité produite")
 		bom = boms.setdefault(
@@ -455,6 +507,9 @@ def check(data, settings, report):
 	}
 	batch_items = {row["code"] for row in plan["items"] if row["batch"]}
 	expiry_items = {row["code"] for row in plan["items"] if row["expiry"]}
+	buying = {row["code"]: row["buying"] for row in plan["items"]}
+	lots = {}  # lot number -> the item it belongs to in this file
+	counted = set()  # (item, warehouse, lot) already in the file
 	for number, row in data["Stock initial"]:
 		code = str(row["code"])
 		if not item_exists(code):
@@ -480,20 +535,62 @@ def check(data, settings, report):
 		has_expiry = code in expiry_items or cint(frappe.db.get_value("Item", code, "has_expiry_date"))
 		if has_batch and not row["batch"]:
 			report.error("Stock initial", number, f"« {code} » est suivi par lot : indiquez le lot")
+		lot = str(row["batch"]) if has_batch and row["batch"] else None
+
+		if (code, row["warehouse"], lot) in counted:
+			in_lot = f", lot {lot}" if lot else ""
+			report.error("Stock initial", number, f"« {code} » compté deux fois ({row['warehouse']}{in_lot})")
+			continue
+		counted.add((code, row["warehouse"], lot))
+
+		if lot:
+			# ERPNext names a batch by its number alone: one number, one item
+			owner = lots.setdefault(lot, code)
+			if owner == code:
+				owner = frappe.db.get_value("Batch", lot, "item") or code
+			if owner != code:
+				report.error(
+					"Stock initial",
+					number,
+					f"lot « {lot} » : c'est déjà le lot de l'article « {owner} ». Un numéro de lot ne sert "
+					f"qu'à un article : ajoutez-lui le code de l'article (ex. {lot}-{code})",
+				)
+
 		expiry = as_date(row["expiry"], "Stock initial", number, report)
 		if has_expiry and row["batch"] and not expiry:
 			report.error("Stock initial", number, f"« {code} » : indiquez la date d'expiration du lot")
+
+		# ERPNext refuses an opening count without a value: the line's cost,
+		# else the item's purchase price
+		rate = None
+		if row["rate"] not in (None, ""):
+			rate = as_number(row["rate"], "Stock initial", number, report, "Coût unitaire")
+		elif not flt(buying[code] if code in buying else frappe.db.get_value("Item", code, "valuation_rate")):
+			report.error(
+				"Stock initial",
+				number,
+				f"« {code} » : coût unitaire à remplir (l'article n'a pas de prix d'achat)",
+			)
 		plan["stock"].append(
 			{
 				"item_code": code,
 				"warehouse": warehouses[row["warehouse"]],
 				"qty": as_number(row["qty"], "Stock initial", number, report, "Quantité"),
-				"valuation_rate": flt(row["rate"]) if row["rate"] not in (None, "") else None,
-				"batch_no": str(row["batch"]) if has_batch and row["batch"] else None,
+				"valuation_rate": rate,
+				"batch_no": lot,
 				"expiry_date": expiry,
 			}
 		)
 	return plan
+
+
+def twice(seen, name):
+	"""True when this name (case ignored) was already met in the sheet."""
+	key = str(name).casefold()
+	if key in seen:
+		return True
+	seen.add(key)
+	return False
 
 
 def create(plan, settings, report, opening_date=None):
@@ -658,8 +755,8 @@ def add_attribute_values(attribute, values):
 
 
 def create_opening_stock(rows, settings, report, opening_date=None):
-	"""One Stock Reconciliation "Opening Stock" for every counted line, dated
-	opening_date when given (else today)."""
+	"""Stock Reconciliations "Opening Stock" for the counted lines, MAX_LINES
+	lines each, dated opening_date when given (else today)."""
 	for row in rows:
 		if row["batch_no"] and not frappe.db.exists("Batch", row["batch_no"]):
 			frappe.get_doc(
@@ -678,29 +775,31 @@ def create_opening_stock(rows, settings, report, opening_date=None):
 
 	from dz_core.setup.accounts import opening_account
 
-	doc = frappe.get_doc(
-		{
-			"doctype": "Stock Reconciliation",
-			"company": settings.company,
-			"purpose": "Opening Stock",
-			"expense_account": opening_account(settings.company),
-			"posting_date": getdate(opening_date) if opening_date else getdate(),
-			"set_posting_time": 1 if opening_date else 0,
-			"items": [
-				{
-					"item_code": row["item_code"],
-					"warehouse": row["warehouse"],
-					"qty": row["qty"],
-					"valuation_rate": row["valuation_rate"]
-					if row["valuation_rate"] is not None
-					else frappe.db.get_value("Item", row["item_code"], "valuation_rate"),
-					"use_serial_batch_fields": 1 if row["batch_no"] else 0,
-					"batch_no": row["batch_no"],
-				}
-				for row in rows
-			],
-		}
-	)
-	doc.insert(ignore_permissions=True)
-	doc.submit()
-	report.done("Stock initial", doc.name)
+	account = opening_account(settings.company)
+	for start in range(0, len(rows), MAX_LINES):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Stock Reconciliation",
+				"company": settings.company,
+				"purpose": "Opening Stock",
+				"expense_account": account,
+				"posting_date": getdate(opening_date) if opening_date else getdate(),
+				"set_posting_time": 1 if opening_date else 0,
+				"items": [
+					{
+						"item_code": row["item_code"],
+						"warehouse": row["warehouse"],
+						"qty": row["qty"],
+						"valuation_rate": row["valuation_rate"]
+						if row["valuation_rate"] is not None
+						else frappe.db.get_value("Item", row["item_code"], "valuation_rate"),
+						"use_serial_batch_fields": 1 if row["batch_no"] else 0,
+						"batch_no": row["batch_no"],
+					}
+					for row in rows[start : start + MAX_LINES]
+				],
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		doc.submit()
+		report.done("Stock initial", doc.name)

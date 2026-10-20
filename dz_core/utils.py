@@ -15,6 +15,9 @@ def montant_en_lettres(amount):
 		return num2words(number, lang="fr")
 
 	amount = round(flt(amount), 2)
+	if amount < 0:
+		# "moins" once, then the amount as if positive (a credit note's total)
+		return "moins " + montant_en_lettres(-amount)
 	dinars = int(amount)
 	centimes = round((amount - dinars) * 100)
 	number_words = in_words(dinars)
