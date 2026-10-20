@@ -70,6 +70,23 @@ def make_atelier_the_home_page():
 	# System Settings are cached per process: drop the copies so it applies now
 	clear_system_settings_cache()
 	frappe.local.system_settings = None
+	frappe.cache.delete_key("home_page")
+
+
+def home_page_after_login(user):
+	"""The page a desk user lands on after login (hook get_website_user_home_page).
+	Frappe 16 sends desk users to /desk, its app list, whatever the default app:
+	follow the default app instead, the user's own or the site's (Atelier, or
+	COD once dz_cod is set up). Website users and guests keep Frappe's rules."""
+	from frappe.apps import get_default_path
+
+	if user == "Guest" or frappe.get_cached_value("User", user, "user_type") != "System User":
+		return None
+	if not (
+		frappe.get_system_settings("default_app") or frappe.get_cached_value("User", user, "default_app")
+	):
+		return None
+	return get_default_path()
 
 
 def set_default_print_formats():

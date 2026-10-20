@@ -12,7 +12,7 @@ only**: this is Pack Atelier, without the COD app.
 | Makes | 6 jams, date paste, 3 honeys (batches + expiry dates) | 6 models in sizes and colours (44 variants) |
 | Buys | Fruit pulp, sugar, dates, bulk honey, jars, lids, labels, cartons | Jersey, fleece, denim, poplin, thread (by the cone), buttons, zips, rivets, labels, bags |
 | Sells to | 3 wholesalers, 12 superettes, 15 grocers, 5 individuals, in 10 wilayas | 3 wholesalers, 11 boutiques, 4 companies (work coats), in 8 wilayas |
-| 13 weeks (load of 19 Oct) | 151 orders, 146 invoices, 124 work orders, 41 purchases; about 980 documents | 78 orders, 76 invoices, 92 work orders, 32 purchases; about 580 documents |
+| 13 weeks (load of 20 Oct) | 154 orders, 150 invoices, 130 work orders, 45 purchases; about 1 100 documents | 78 orders, 79 invoices, 92 work orders, 32 purchases; about 690 documents |
 
 **The figures are placeholders**, plausible but not a real producer's. They
 live in `dz_core/demo/food.py` and `clothing.py` only; replace them with real
@@ -31,7 +31,7 @@ bench --site food-demo.localhost execute dz_core.demo.loader.load --kwargs "{'pr
 ```
 
 Same for the clothing workshop with `atelier-demo.localhost` and
-`'profile': 'clothing'`. A load takes about 20 minutes (clothing: 10) on the WSL bench
+`'profile': 'clothing'`. A load takes about 20 minutes (clothing: 15) on the WSL bench
 (code on the Windows disk); it prints its steps and a summary at the end.
 
 On a laptop, `bench start` shows only the default site. To open a demo next
@@ -48,7 +48,8 @@ Or make it the default (dafter-cod docs/LOCAL_TEST.md section 5).
 | `ventes@<site>` | Sales and payments | العربية (to show the Arabic interface) |
 
 Password for all: `Demo-2026!` (demo sites only). `Administrator` keeps the
-password chosen at `new-site`.
+password chosen at `new-site`. Every login lands on the Atelier home page
+(`/desk/atelier`); the factory icon on the left rail opens its menu.
 
 ## Load again, wipe, reset
 
@@ -83,45 +84,61 @@ password chosen at `new-site`.
 
 ## What a prospect sees (and where)
 
+Figures from the loads of 20 October 2026 (food / clothing); a later load
+moves them a little.
+
 | What | Where |
 | --- | --- |
-| Their Excel file becomes their data | File (or the Company's attachments) → `import-demo-food-1-donnees….xlsx`; Stock → Item, Customer, BOM |
-| Recipes and work orders | Manufacturing → BOM, Work Order (one in progress today) |
-| Cost per batch, and a price rise reaching it | Stock → report "Livre d'Inventaire" (Stock Ledger), item "Confiture de fraise 250 g": column "Prix d'Entrée" on the rows whose "Type de Référence" is Stock Entry, one per batch made; it steps up once the pulp bought after the 18 % rise (eight weeks ago) is used (T-shirts: jersey +15 %, nine weeks ago; item "T-shirt col rond" variants) |
-| Batches and expiry dates, oldest sold first | Stock → Batch; the last quince jam batch expires within 30 days |
-| Legal invoices | Accounts → Sales Invoice → Print: Facture DZ by default, amount in words, legal mentions; one cancelled invoice prints FACTURE ANNULÉE |
-| Who owes what | Accounts → Accounts Receivable: about fifteen overdue invoices (clothing: eight); Superette Le Panier stopped paying its last invoices |
-| What to buy | Stock → report "Qté de Stock Projeté" (Stock Projected Qty), warehouse Matières premières: "Quantité Réelle" under "Niveau de réapprovisionnement", with "Qté Commandée"; the 250 g or 500 g jars are under their reorder level with orders on the way (the glassworks delivers 8 working days after the order); in the workshop, fleece or denim from the Oran mill (12 working days). Buying → Purchase Order: the ones still to receive |
-| What to deliver | Selling → Sales Order: orders to deliver and bill |
+| The day at a glance | Atelier home page (where every login lands): today's sales, orders to deliver, work in progress, materials to buy, overdue invoices (food: 5, 6, 5, 16; clothing: 0, 0, 2, 6, everything ordered is delivered), then sales per month, stock value per warehouse and the materials under their level |
+| Their Excel file becomes their data | File (or the Company's attachments) → `import-demo-food-1-donnees….xlsx`; Atelier → Articles, Clients, Nomenclatures |
+| Recipes and work orders | Atelier → Nomenclatures, Fabrication (food: six in progress today) |
+| What a product costs, and a price rise reaching it | Report "Coût de revient": one row per product (food: 10, average margin 48.5 %; clothing: 6 models, 37.8 %); open a row for its materials at the last purchase price. Strawberry jam 250 g: 140.18 DA of materials + 25 DA labour = 165.18 DA, sold 350 DA, margin 52.8 %; the pulp is at 448 DA/kg since the 18 % rise (1 September, 380 before), and "Dernier lot : coût réel" shows the last batch really cost 165.18 DA (155.83 before the rise). T-shirt: jersey 747 DA/m since 26 August (650 before, +15 %), 593 DA of materials + 150 labour = 743 DA, sold 1 200, margin 38.1 % (batches before the rise: 670.50 DA) |
+| Batches and expiry dates, oldest sold first | Stock → Batch; the last quince jam batch (450 g) expires on 14 November |
+| Legal invoices | Atelier → Factures → Print: Facture DZ by default, amount in words, legal mentions; one cancelled invoice prints FACTURE ANNULÉE |
+| What to buy | Home page chart "À acheter : sous le seuil" and report "À acheter": food, 5 materials under their level (cartons, labels, eucalyptus honey, 250 g and 450 g jars; the 250 g jars at 422 for a level of 1 000, 720 on order from the glassworks, which delivers 8 working days after the order); clothing, denim and fleece from the Oran mill (12 working days). All already ordered, so "À commander" is 0 |
+| What to deliver and to make | Report "À produire"; Atelier → Commandes (food: five orders to deliver) |
+| Sales per month | Report "Ventes par mois": July to today, per product (or customer, or group). Food 7 724 100 DA HT, October 1 719 580, September against August −31.5 %; clothing 3 956 050 DA HT, October 876 680, −21.8 % |
+| Who owes what | Report "Balance âgée clients" (Accounts Receivable): 16 overdue invoices for 1 357 922 DA (clothing: 6, 251 660 DA); Superette Le Panier stopped paying its last invoices |
+| Stock value | Report "Valeur du stock": food 3 024 458 DA in 3 warehouses, clothing 5 970 687 DA, equal to ERPNext's Stock Balance |
 | Month-end counts | Stock → Stock Reconciliation: a few breakages found |
-| Arabic | Log in as `ventes@…`: the whole interface right-to-left |
+| Arabic | Log in as `ventes@…`: the whole interface right-to-left, a home page with sales counters only |
 
 ## A 10-minute script
 
 Food producer first; the clothing workshop follows the same order with models
-and sizes instead of jams.
+and sizes instead of jams. Log in as `gerant@…`: the Atelier home page opens.
 
 1. **"Send us your Excel"** (1 min). Open File, show the two import files.
    Explain: we fill your data once in this file; the import checks every line
-   and creates nothing while one line is wrong.
-2. **A batch is made** (2 min). Manufacturing → Work Order: the one in
-   progress, its materials already in Travaux en cours. Open a completed one:
-   its stock entry, the jars made, the batch number and expiry date.
-3. **What a jar costs** (2 min). Report "Livre d'Inventaire", item
-   "Confiture de fraise 250 g": on the Stock Entry rows, the "Prix d'Entrée"
-   of an August batch (about 156 DA), then an October one (about 165 DA). The pulp price went up: the new batches carry
-   it, the old stock kept its cost. (The cost-per-product report of Phase 2
-   will show this in one screen.)
-4. **The invoice** (2 min). Sales Invoice → any paid one → Print: legal
-   mentions, TVA 19 %, amount in French words. Then the cancelled one:
-   FACTURE ANNULÉE. (Clothing: no TVA, the IFU note at the bottom.)
-5. **Money** (1 min). Accounts Receivable: who is late, by how much.
-6. **Stock to watch** (1 min). The quince batch close to expiry; jars from
-   the glassworks under their reorder level, with their purchase orders on
-   the way (report "Qté de Stock Projeté"). Quince and, after September, fig jam are no longer
-   made: they sell until their stock runs out, then customers are told no.
-7. **Arabic and roles** (1 min). Log in as `ventes@…`: Arabic, and only sales
-   and payments.
+   and creates nothing while one line is wrong. Back on the home page: the
+   day at a glance, built from that data and 13 weeks of work.
+2. **A batch is made** (2 min). Home page → "Fabrication en cours" (6): the
+   work orders in progress, their materials already in Travaux en cours. Open
+   a completed one: its stock entry, the jars made, the batch number and
+   expiry date.
+3. **What a jar costs** (2 min). Report "Coût de revient": one line per
+   product, cost, selling price and margin. Open "Confiture de fraise 250 g":
+   pulp, sugar, pectin, jar, lid, label and carton at their last purchase
+   price, 140.18 DA, plus 25 DA labour: 165.18 DA, sold 350 DA. The pulp went
+   up 18 % on 1 September (380 → 448 DA/kg): the cost follows at once, and
+   "Dernier lot : coût réel" shows the batches made since then really cost
+   165.18 DA instead of 155.83. (Clothing: the T-shirt, jersey +15 %, 743 DA
+   instead of 670.50.)
+4. **The invoice** (2 min). Factures → any paid one → Print: legal mentions,
+   TVA 19 %, amount in French words. Then the cancelled one: FACTURE ANNULÉE.
+   (Clothing: no TVA, the IFU note at the bottom.)
+5. **Money** (1 min). Report "Ventes par mois": 7.7 million DA HT since July,
+   which jams and honeys sell, September 31.5 % under August (switch to
+   "Client" to see who buys). Then "Balance âgée clients": 16 invoices late,
+   who and by how much.
+6. **What to buy** (1 min). The home page chart "À acheter : sous le seuil",
+   then the report: five materials under their level, all already ordered
+   (the 250 g jars: 422 left for a level of 1 000, 720 coming from the
+   glassworks). Stock → Batch: the quince batch that expires on 14 November;
+   quince and, after September, fig jam are no longer made: they sell until
+   their stock runs out.
+7. **Arabic and roles** (1 min). Log in as `ventes@…`: Arabic, the same home
+   page with sales counters only, and only sales and payments.
 
 ## Code
 

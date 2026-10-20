@@ -30,6 +30,8 @@ add_to_apps_screen = [
 		"has_permission": "erpnext.check_app_permission",
 	}
 ]
+# Frappe sends desk users to /desk after login: open the default app instead
+get_website_user_home_page = "dz_core.setup.new_client.home_page_after_login"
 
 # Custom fields for the legal mentions (dz_core/setup/custom_fields.py)
 after_install = "dz_core.setup.install.after_install"

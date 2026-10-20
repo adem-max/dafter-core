@@ -204,6 +204,10 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   makes it the landing page (`default_app = dz_core`). A site with dz_cod
   runs dz_cod's setup after, which makes COD the landing page; both menus
   stay on the rail.
+  Frappe 16 only follows `default_app` for website users and the apps
+  screen: after login it sends desk users to /desk. dz_core's hook
+  `get_website_user_home_page` sends them to the default app's route
+  instead (the user's own default app first), so COD on a dz_cod site.
 - **The low stock alert is a chart, not just a number**: "À acheter" now
   returns a chart (stock against level, per material) and the home page shows
   it, so the materials under their level are named on the page.
