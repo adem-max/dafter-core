@@ -243,10 +243,11 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Accounts Manager), and the "À acheter" counter is keyed on Material Request
   (buyers, stock, production): otherwise the sales login got an error popup
   and a counter stuck on loading.
-- **On a site with dz_cod, every sales order goes through the COD checks**
-  (phone, wilaya, address), wholesale ones included: dz_cod has no "not a
-  COD order" path yet. To decide before a producer who also sells online
-  goes live (dafter-cod).
+- **On a site with dz_cod, an order is COD or a direct sale** (20 October
+  2026, dz_cod's sales channel): wholesale and shop orders are direct sales,
+  skip the COD checks (phone, wilaya, address) and follow ERPNext's usual
+  delivery note and invoice, so a producer who also sells online keeps
+  this app's flows. Until then every order went through the COD checks.
 
 ## Demos (19 October 2026)
 

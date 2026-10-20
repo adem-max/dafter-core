@@ -73,6 +73,12 @@ How ERPNext sees it: Nouvelle / Injoignable / Annulée are **drafts**
 (docstatus 0); **Confirmer = submit** (ERPNext reserves the stock); later
 moves are "update after submit"; Annulée après confirmation = **cancel**.
 
+A **direct sale** (field *Canal* = Vente directe, `cod/channel.py`: the
+customer's usual channel, else COD Settings') takes a short path in the same
+workflow, Nouvelle ──Valider──> Validée, then ERPNext's own delivery note and
+invoice. Every hook in `cod/order.py` returns at once for it (`is_cod`), and
+the transition conditions show the COD buttons on COD orders only.
+
 ### cod/states.py
 
 The state and button names as constants (`NEW = "Nouvelle"`, `CONFIRMED =
