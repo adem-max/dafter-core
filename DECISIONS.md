@@ -136,6 +136,15 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   companies; business buyer's RC, NIF, NIS, tax article; payment method and
   date; stamp and signature. Cancelled invoices print "FACTURE ANNULÉE"
   across the page. To be validated by an accountant before the first client.
+- **The totals follow the arithmetic** (20 October 2026): with a discount,
+  Total HT (what the lines add up to), Remise, Total HT après remise, then
+  each tax after the discount, then TTC. It used to print the discounted HT
+  and subtract the discount again under the taxes.
+- **A credit note prints as "FACTURE D'AVOIR"** with its original invoice,
+  amounts and words positive ("Arrêté le présent avoir à la somme de…"):
+  ERPNext stores it with negative amounts, which printed as a "FACTURE" of
+  "moins … et moins cinquante centimes". The exact wording goes to the
+  accountant with the rest.
 
 ## Import workbook
 
@@ -163,6 +172,17 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **Variants are named in words** ("Chemise manches longues XL Bleu"):
   ERPNext names them with the attribute abbreviations ("…-XL-BLE"), which
   then print on the invoice. The item code keeps ERPNext's form.
+- **A lot number belongs to one item** (20 October 2026): ERPNext names a
+  batch by its number alone, so "L2026-10" on two jams passed the check and
+  failed the import. The check now refuses a lot used by another item (in the
+  file or on the site) and suggests adding the item code.
+- **The check finds what ERPNext would refuse** (20 October 2026): a count
+  without any cost, a recipe unit that nothing converts to the stock unit
+  (ERPNext would count 1 for 1), text in a number column (it became 0), the
+  same count twice, the same customer or supplier twice.
+- **Opening stock is posted 100 lines at a time**: above 100 lines ERPNext
+  submits a Stock Reconciliation in a background job, and the importer said
+  "done" while it was still a draft.
 - **Models and their stock come in two files** when the stock lists variants:
   the check of a file runs before anything is created, so a variant made by
   the "Modèles" sheet is unknown to the "Stock initial" sheet of the same

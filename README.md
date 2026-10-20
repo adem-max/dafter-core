@@ -98,5 +98,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 59 tests (13 unit + 46 integration)
+bench --site test.localhost run-tests --app dz_core     # 63 tests (13 unit + 50 integration)
 ```

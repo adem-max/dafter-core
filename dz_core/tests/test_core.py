@@ -5,7 +5,9 @@ if it was never prepared, so the tests work on an empty test site.
 """
 
 import os
+import re
 import tempfile
+from html import unescape
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -265,6 +267,85 @@ class TestWorkbook(IntegrationTestCase):
 		again = import_workbook(path, dry_run=0)
 		self.assertEqual(again["created"], {})
 
+	def test_check_finds_what_the_import_would_refuse(self):
+		t = self.tag
+		flour, salt, jam, jam2 = f"RM-{t}-FARINE", f"RM-{t}-SEL", f"FG-{t}-LOTA", f"FG-{t}-LOTB"
+		# a lot number already used by another item on the site
+		other = f"FG-{t}-AUTRE"
+		frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": other,
+				"item_name": "Autre produit",
+				"item_group": "Produits finis",
+				"stock_uom": "Nos",
+				"has_batch_no": 1,
+			}
+		).insert()
+		frappe.get_doc({"doctype": "Batch", "batch_id": f"L-{t}-PRIS", "item": other}).insert()
+
+		def fill(wb):
+			wb["Clients"].append([f"Client {t} double", "", "", "", "", "", "", "", "", ""])
+			wb["Clients"].append([f"client {t} DOUBLE", "", "", "", "", "", "", "", "", ""])
+			# no purchase price; a price that is not a number
+			wb["Articles"].append(
+				[flour, "Farine", "Matières premières", "Kg", None, None, "Non", "Non", None]
+			)
+			wb["Articles"].append([salt, "Sel", "Matières premières", "Kg", "abc", None, "Non", "Non", None])
+			wb["Articles"].append([jam, "Confiture A", "Produits finis", "Pot", 100, 450, "Oui", "Non", None])
+			wb["Articles"].append(
+				[jam2, "Confiture B", "Produits finis", "Pot", 100, 450, "Oui", "Non", None]
+			)
+			# flour is counted in Kg: nothing turns a Pot into Kg
+			wb["Nomenclatures"].append([jam, 10, flour, 2, "Pot"])
+			wb["Stock initial"].append([flour, "Matières premières", 10, None, None, None])  # no cost at all
+			wb["Stock initial"].append([salt, "Matières premières", 5, 50, None, None])
+			wb["Stock initial"].append([salt, "Matières premières", 5, 50, None, None])  # counted twice
+			wb["Stock initial"].append([jam, "Produits finis", 5, 300, f"L-{t}-COMMUN", None])
+			wb["Stock initial"].append([jam2, "Produits finis", 5, 300, f"L-{t}-COMMUN", None])  # same lot
+			wb["Stock initial"].append([jam, "Produits finis", 5, 300, f"L-{t}-PRIS", None])  # other's lot
+
+		result = import_workbook(self.workbook(fill), dry_run=0)
+		errors = "\n".join(result["errors"])
+		for expected in (
+			f"client « client {t} DOUBLE » en double",
+			"Prix d'achat « abc » n'est pas un nombre",
+			"rien ne convertit Pot en Kg",
+			f"« {flour} » : coût unitaire à remplir",
+			f"« {salt} » compté deux fois",
+			f"lot « L-{t}-COMMUN » : c'est déjà le lot de l'article « {jam} »",
+			f"lot « L-{t}-PRIS » : c'est déjà le lot de l'article « {other} »",
+		):
+			self.assertIn(expected, errors)
+		self.assertEqual(len(result["errors"]), 7, errors)
+		self.assertFalse(frappe.db.exists("Item", jam), "nothing is created while the file has errors")
+
+	def test_opening_stock_is_posted_100_lines_at_a_time(self):
+		# Above 100 lines ERPNext submits in a background job: the importer splits
+		from unittest.mock import patch
+
+		from dz_core.imports import workbook
+
+		codes = [f"RM-{self.tag}-N{i}" for i in range(3)]
+
+		def fill(wb):
+			for code in codes:
+				wb["Articles"].append(
+					[code, f"Matière {code}", "Matières premières", "Kg", 10, None, "Non", "Non"]
+				)
+				wb["Stock initial"].append([code, "Matières premières", 4, 10, None, None])
+
+		with patch.object(workbook, "MAX_LINES", 2):
+			result = import_workbook(self.workbook(fill), dry_run=0)
+		self.assertEqual(result["errors"], [])
+		self.assertEqual(result["created"]["Stock initial"], 2)
+		counts = set(
+			frappe.get_all("Stock Reconciliation Item", filters={"item_code": ["in", codes]}, pluck="parent")
+		)
+		self.assertEqual(len(counts), 2)
+		for name in counts:
+			self.assertEqual(frappe.db.get_value("Stock Reconciliation", name, "docstatus"), 1, name)
+
 	def test_file_from_an_older_template_still_imports(self):
 		# NIS and AI were added to "Clients" later: a file without them is fine
 		name = f"Client {self.tag} ancien"
@@ -278,46 +359,113 @@ class TestWorkbook(IntegrationTestCase):
 		self.assertTrue(frappe.db.exists("Customer", {"customer_name": name}))
 
 
+def totals_of(html):
+	"""The totals table of a printed Facture DZ: [(label, amount)], amounts as numbers."""
+	table = re.search(r'<table class="dz-totals">(.*?)</table>', html, re.S).group(1)
+	rows = re.findall(r'<tr[^>]*><td>(.*?)</td><td class="num">(.*?)</td></tr>', table, re.S)
+	return [(unescape(label).strip(), number(amount)) for label, amount in rows]
+
+
+def number(text):
+	"""'- 2 142,00' -> -2142.0 (montant() writes French separators)."""
+	text = "".join(unescape(text).split()).replace(",", ".")
+	return -float(text[1:]) if text.startswith("-") else float(text)
+
+
 class TestPrintFormat(IntegrationTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
 		cls.settings = ensure_prepared()
-
-	def test_invoice_renders_legal_mentions(self):
-		company = frappe.get_doc("Company", self.settings.company)
-		company.update({"dz_legal_form": "Auto-entrepreneur", "dz_nif": "NIF-TEST-123", "dz_rc": "AE-TEST-9"})
-		company.save()
-		code = f"PF-{random_string(5).upper()}"
+		cls.code = f"PF-{random_string(5).upper()}"
 		frappe.get_doc(
 			{
 				"doctype": "Item",
-				"item_code": code,
+				"item_code": cls.code,
 				"item_name": "Produit test",
 				"item_group": "Produits finis",
 				"stock_uom": "Nos",
 				"is_stock_item": 0,
 			}
 		).insert()
-		customer = frappe.get_doc(
-			{"doctype": "Customer", "customer_name": f"Client facture {code}", "dz_nif": "NIF-CLIENT-1"}
-		).insert()
-		invoice = frappe.get_doc(
+		cls.customer = (
+			frappe.get_doc(
+				{
+					"doctype": "Customer",
+					"customer_name": f"Client facture {cls.code}",
+					"dz_nif": "NIF-CLIENT-1",
+				}
+			)
+			.insert()
+			.name
+		)
+
+	def invoice(self, **values):
+		return frappe.get_doc(
 			{
 				"doctype": "Sales Invoice",
 				"company": self.settings.company,
-				"customer": customer.name,
+				"customer": self.customer,
 				"posting_date": today(),
 				"due_date": today(),
 				"dz_payment_mode": "Espèces",
-				"items": [{"item_code": code, "qty": 2, "rate": 1000}],
+				"items": [{"item_code": self.code, "qty": 2, "rate": 1000}],
+				**values,
 			}
 		).insert()
+
+	def test_invoice_renders_legal_mentions(self):
+		company = frappe.get_doc("Company", self.settings.company)
+		company.update({"dz_legal_form": "Auto-entrepreneur", "dz_nif": "NIF-TEST-123", "dz_rc": "AE-TEST-9"})
+		company.save()
+		invoice = self.invoice()
 		html = frappe.get_print("Sales Invoice", invoice.name, "Facture DZ", doc=invoice)
 		for text in ("FACTURE", "NIF-TEST-123", "AE-TEST-9", "NIF-CLIENT-1", "Espèces", "BROUILLON"):
 			self.assertIn(text, html)
 		if self.settings.invoice_note:
 			self.assertIn(self.settings.invoice_note.replace("'", "&#39;"), html.replace("'", "&#39;"))
+
+	def test_totals_add_up_with_a_discount_and_tva(self):
+		from erpnext.controllers.accounts_controller import get_taxes_and_charges
+
+		template = template_with_rate("Sales Taxes and Charges Template", self.settings.company, 19)
+		if not template:
+			self.skipTest("no 19 % template on this site")
+		taxes = get_taxes_and_charges("Sales Taxes and Charges Template", template)
+		for apply_on in ("Net Total", "Grand Total"):
+			with self.subTest(apply_on):
+				invoice = self.invoice(
+					taxes_and_charges=template, taxes=taxes, apply_discount_on=apply_on, discount_amount=200
+				)
+				rows = totals_of(frappe.get_print("Sales Invoice", invoice.name, "Facture DZ", doc=invoice))
+				labels = [label for label, _amount in rows]
+				amounts = dict(rows)
+				self.assertEqual(labels[:3], ["Total HT (DA)", "Remise", "Total HT après remise (DA)"])
+				self.assertEqual(amounts["Total HT (DA)"], 2000)  # what the lines add up to
+				# each line of the table follows from the one above
+				self.assertAlmostEqual(
+					amounts["Total HT (DA)"] + amounts["Remise"], amounts["Total HT après remise (DA)"], 2
+				)
+				self.assertAlmostEqual(amounts["Total HT après remise (DA)"], invoice.net_total, 2)
+				ttc = amounts["Total TTC (DA)"]
+				self.assertAlmostEqual(sum(amount for _label, amount in rows[2:-1]), ttc, 2)
+				self.assertAlmostEqual(ttc, invoice.rounded_total or invoice.grand_total, 2)
+
+	def test_credit_note_prints_as_an_avoir(self):
+		from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_sales_return
+
+		invoice = self.invoice()
+		invoice.submit()
+		credit_note = make_sales_return(invoice.name)
+		credit_note.insert()
+		html = frappe.get_print("Sales Invoice", credit_note.name, "Facture DZ", doc=credit_note)
+		text = unescape(html)
+		self.assertIn("FACTURE D'AVOIR", text)
+		self.assertIn(f"Facture d'origine : {invoice.name}", text)
+		self.assertIn("Arrêté le présent avoir à la somme de : deux mille dinars algériens.", text)
+		self.assertNotIn("moins", text)
+		# amounts printed positive: the title says it is a credit
+		self.assertEqual(totals_of(html), [("Total HT (DA)", 2000), ("Total de l'avoir (DA)", 2000)])
 
 
 class TestAmounts(IntegrationTestCase):
@@ -328,5 +476,10 @@ class TestAmounts(IntegrationTestCase):
 		self.assertEqual(montant_en_lettres(1), "un dinar algérien")
 		self.assertEqual(
 			montant_en_lettres(2000000.5), "deux millions de dinars algériens et cinquante centimes"
+		)
+		# a credit note's total: "moins" once, plural as for a positive amount
+		self.assertEqual(
+			montant_en_lettres(-32400.5),
+			"moins trente-deux mille quatre cents dinars algériens et cinquante centimes",
 		)
 		self.assertEqual(montant(32400), "32 400,00")
