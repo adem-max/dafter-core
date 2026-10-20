@@ -28,7 +28,7 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 Goal: you can set up a client and show it, without help.
 
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 46 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 53 dz_core, 98 dz_cod and 16 dz_hub tests pass on a bench built only from GitHub.
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [x] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (done 19 Oct, with the demos).
@@ -55,10 +55,12 @@ Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). 
 - [x] **Cost per product report.** Raw material cost per unit from the BOM, selling price, margin.
   Done when: the confiture in the food demo shows its cost from fruit, sugar and jar prices, and changing the sugar price changes the cost.
   Done 20 Oct: report "Coût de revient" (strawberry jam 250 g: 140.18 DA of materials + 25 of labour, 52.8 % margin); a dearer sugar receipt moves it (tests/test_reports.py). Also "À produire".
-- [ ] **Stock value report.** Value of stock per warehouse and per item group, at a chosen date.
+- [x] **Stock value report.** Value of stock per warehouse and per item group, at a chosen date.
   Done when: totals match ERPNext's Stock Balance report on the demo site.
-- [ ] **Sales per month report.** Per product and per customer, with the month-on-month change.
+  Done 20 Oct: report "Valeur du stock"; food demo 3 240 800.31 DA, clothing 6 013 458.00 DA, both equal to Stock Balance.
+- [x] **Sales per month report.** Per product and per customer, with the month-on-month change.
   Done when: it opens on the demo site with 3 months of data and the totals match the invoices.
+  Done 20 Oct: report "Ventes par mois" (July to October); totals equal the invoices on both demos (7 360 570 and 3 848 950 DA HT). The change compares the last two full months.
 - [ ] **Low stock alert.** Reorder levels from the import workbook (new optional column), shown on a simple workspace.
   Done when: a raw material below its level appears on the workspace.
   20 Oct: the workbook columns and the report "À acheter" are done; the workspace counter comes with the Atelier home page.

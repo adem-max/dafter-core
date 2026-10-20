@@ -190,6 +190,11 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **ERPNext's automatic material requests stay off** (Stock Settings, auto
   indent): they create documents every night that a small workshop does not
   expect. "À acheter" shows what to order; the owner orders.
+- **"Valeur du stock" sums the Stock Ledger up to the date**, ERPNext's
+  Stock Balance source, so the two totals are equal by construction.
+- **"Ventes par mois" compares the last two full months**: set against a
+  whole month, the current one always looked like a fall (−38 % on the food
+  demo on 19 October).
 - **"À produire" lists every ordered product**, with what stock and work
   orders already cover: a workshop that makes ahead sees its orders covered
   rather than an empty page.
