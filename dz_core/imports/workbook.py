@@ -34,7 +34,7 @@ from frappe.utils import cint, flt, getdate
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import get_settings
 from dz_core.phone import normalize_phone
-from dz_core.setup.sectors import CLOTHING, SECTORS
+from dz_core.setup.sectors import CLOTHING, FINISHED_GROUPS, SECTORS
 from dz_core.setup.wilayas import find_wilaya
 
 EXAMPLE = "EXEMPLE"
@@ -73,6 +73,9 @@ SHEETS = {
 		("Suivi par lot (Oui/Non)", "batch", False),
 		("Date d'expiration (Oui/Non)", "expiry", False),
 		("Durée de conservation (jours)", "shelf_life", False),
+		# below this stock, the item shows in "A acheter" and on the home page
+		("Seuil de réapprovisionnement", "reorder_level", False),
+		("Quantité à commander", "reorder_qty", False),
 	],
 	"Modèles": [
 		("Code modèle", "code", True),
@@ -124,6 +127,8 @@ EXAMPLES = {
 		"Oui",
 		"Oui",
 		730,
+		"",
+		"",
 	],
 	"Modèles": [
 		"EXEMPLE-TSHIRT",
@@ -148,6 +153,7 @@ README = [
 	"Entrepôts (Stock initial) : Matières premières, Travaux en cours, Produits finis.",
 	"Nomenclatures : une ligne par composant. Exemple : pour 10 pots de confiture, 5 Kg de fruits et 4 Kg de sucre = deux lignes avec Quantité produite = 10.",
 	"Stock initial : comptez réellement votre stock avant de remplir. Un chiffre faux rend tous les rapports faux.",
+	"Seuil de réapprovisionnement : quand le stock d'un article passe en dessous, il apparaît dans « À acheter ». Quantité à commander : ce que vous achetez d'habitude d'un coup.",
 	"Oui/Non : écrivez Oui ou Non.",
 ]
 
@@ -390,9 +396,16 @@ def check(data, settings, report):
 						number,
 						"suivi par lot désactivé sur ce site (Stock Settings, Activate Serial / Batch No for Item)",
 					)
-				for key, label in (("buying", "Prix d'achat"), ("selling", "Prix de vente")):
+				for key, label in (
+					("buying", "Prix d'achat"),
+					("selling", "Prix de vente"),
+					("reorder_level", "Seuil de réapprovisionnement"),
+					("reorder_qty", "Quantité à commander"),
+				):
 					if row[key] not in (None, ""):
 						row[key] = as_number(row[key], sheet, number, report, label, positive=False)
+				if row["reorder_qty"] and not row["reorder_level"]:
+					report.error(sheet, number, "une quantité à commander demande un seuil")
 			else:
 				row["sizes"], row["colours"] = split_list(row["sizes"]), split_list(row["colours"])
 				if not row["sizes"] or not row["colours"]:
@@ -539,6 +552,7 @@ def create(plan, settings, report, opening_date=None):
 				"create_new_batch": cint(row["batch"]),
 				"has_expiry_date": cint(row["expiry"]),
 				"shelf_life_in_days": cint(row["shelf_life"]) if row["expiry"] else 0,
+				"reorder_levels": reorder_rows(row, settings),
 			}
 		).insert(ignore_permissions=True)
 		report.done("Article", doc.name)
@@ -565,6 +579,28 @@ def create(plan, settings, report, opening_date=None):
 
 	if plan["stock"]:
 		create_opening_stock(plan["stock"], settings, report, opening_date)
+
+
+def reorder_rows(row, settings):
+	"""The item's reorder level, in the warehouse its group stores it in
+	(raw materials and packaging: Matières premières)."""
+	if not row["reorder_level"]:
+		return []
+	warehouse = frappe.db.get_value(
+		"Item Default", {"parent": row["group"], "company": settings.company}, "default_warehouse"
+	) or (
+		settings.finished_goods_warehouse
+		if row["group"] in FINISHED_GROUPS
+		else settings.raw_materials_warehouse
+	)
+	return [
+		{
+			"warehouse": warehouse,
+			"warehouse_reorder_level": row["reorder_level"],
+			"warehouse_reorder_qty": row["reorder_qty"] or 0,
+			"material_request_type": "Purchase",
+		}
+	]
 
 
 def create_model(row, report):

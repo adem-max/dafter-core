@@ -31,10 +31,19 @@ def cell(value):
 	return value
 
 
+def with_reorder(profile, row):
+	"""An item's reorder level and quantity come from the profile's buying
+	rules (RAW), and go into the workbook's columns like a client's would."""
+	rule = getattr(profile, "RAW", {}).get(row.get("code"))
+	if not rule:
+		return row
+	return {**row, "reorder_level": rule["reorder_level"], "reorder_qty": rule["reorder_qty"]}
+
+
 def rows_of(profile, sheet):
 	if sheet in SOURCES:
 		return [
-			[cell(row.get(key)) for _header, key, _req in SHEETS[sheet]]
+			[cell(with_reorder(profile, row).get(key)) for _header, key, _req in SHEETS[sheet]]
 			for row in getattr(profile, SOURCES[sheet], [])
 		]
 	if sheet == "Nomenclatures":

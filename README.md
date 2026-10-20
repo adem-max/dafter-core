@@ -29,6 +29,7 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | Backups | `scripts/`, `dz_core/setup/restore_check.py` | Daily off-server backup and a restore test (apps on top add their records by hook) |
 | Optional features | `dz_core/features.py`, `dz-features` command | What each client may switch on, per site. Apps declare their features with a `dz_features` hook (dz_cod has four); the hub (dz_hub) sells and applies them |
 | Server guide | `docs/DEPLOY.md` | Ubuntu server, one site per client, SSL, backups, restore, updates, security, new client in 2 hours |
+| Producer reports | `dz_core/dz_core/report/`, `dz_core/reports.py` | "Coût de revient" (each product's materials at today's prices, labour, margin), "À produire" (orders vs stock and work orders), "À acheter" (under the reorder level) |
 | Demo sites | `dz_core/demo/`, `docs/DEMO.md` | A food producer (régime réel) and a clothing workshop (IFU) with 13 weeks of history, set up through `prepare()` and the import workbook; a 10-minute script for prospects |
 
 ## Set up a new client
@@ -65,6 +66,9 @@ bench --site client1.localhost execute dz_core.imports.workbook.import_workbook 
 # opening stock counted on another day: add 'opening_date': '2026-11-01'
 ```
 
+The "Articles" sheet also takes a reorder level and quantity per item: below
+the level, the item shows in the "À acheter" report.
+
 Clothing models and the stock of their size/colour variants go in two files:
 the models first, then the opening count (a variant must exist before its
 stock line is checked).
@@ -92,5 +96,5 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 43 tests (13 unit + 30 integration)
+bench --site test.localhost run-tests --app dz_core     # 46 tests (13 unit + 33 integration)
 ```

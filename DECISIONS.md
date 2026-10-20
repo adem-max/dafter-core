@@ -169,6 +169,35 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   file. Data first, then the opening count, which is also the natural order
   of an onboarding.
 
+## Producer reports (20 October 2026)
+
+- **Our own Script Reports, not ERPNext's**, for the questions a workshop
+  asks every day: "Coût de revient", "À produire", "À acheter" (then
+  "Valeur du stock", "Ventes par mois"). ERPNext has the data but spreads the
+  answer over several reports in English vocabulary (BOM Stock Calculated,
+  Stock Projected Qty, Stock Ledger). Report names carry no accents (they
+  become Python folders); `translations/fr.csv` gives them their accents.
+- **Cost per product prices materials at the last receipt by default**: the
+  owner wants to know what a jar costs *now*, and a dearer sugar delivery must
+  show at once ("Coût moyen en stock" is the other choice). ERPNext's own
+  valuation (FIFO by batch) only moves when the old stock is used up.
+- **Labour in the cost is what the manufacture entries of the last 90 days
+  added per unit**, not BOM operations: workshops keep no job cards
+  (DECISIONS, demos). A client who records no labour sees 0.
+- **Reorder levels come from the import workbook** (two optional columns,
+  "Seuil de réapprovisionnement" and "Quantité à commander"), in the
+  warehouse the item's group stores it in. The demos use them too.
+- **ERPNext's automatic material requests stay off** (Stock Settings, auto
+  indent): they create documents every night that a small workshop does not
+  expect. "À acheter" shows what to order; the owner orders.
+- **"À produire" lists every ordered product**, with what stock and work
+  orders already cover: a workshop that makes ahead sees its orders covered
+  rather than an empty page.
+- **On a site with dz_cod, every sales order goes through the COD checks**
+  (phone, wilaya, address), wholesale ones included: dz_cod has no "not a
+  COD order" path yet. To decide before a producer who also sells online
+  goes live (dafter-cod).
+
 ## Demos (19 October 2026)
 
 - **Two producer demos, one per sector template**: a food producer and a

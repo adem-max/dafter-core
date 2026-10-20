@@ -10,10 +10,10 @@ Steps:
  1. refuse a site that holds another company's data
  2. prepare() the company (wizard, sector, warehouses, tax regime), fiscal
     years, legal mentions, address
- 3. masters through the client import workbook (workbook.py), opening stock
-    dated the first day of the story
+ 3. masters through the client import workbook (workbook.py), reorder levels
+    included, opening stock dated the first day of the story
  4. what the workbook does not hold yet: customer groups, price lists and
-    prices, reorder levels, users
+    prices, users
  5. the story: planner.py plans it, engine.py posts it, day by day to today
 
 Safe to run again: done steps and events are skipped, and a later run
@@ -46,7 +46,7 @@ def load(profile="food", weeks=13, seed=2026):
 	setup_company(p, start)
 	print("2/5 Classeur d'import (fournisseurs, clients, articles, nomenclatures, stock initial)...")
 	once(profile, "masters", lambda: import_masters(profile, p, start))
-	print("3/5 Prix, groupes de clients, seuils de réapprovisionnement, utilisateurs...")
+	print("3/5 Prix, groupes de clients, utilisateurs...")
 	setup_extras(p)
 	frappe.db.commit()
 	print(f"4/5 Histoire du {start} à aujourd'hui (quelques minutes)...")
@@ -144,7 +144,6 @@ def ensure_address(p):
 def setup_extras(p):
 	setup_customer_groups(p)
 	setup_prices(p)
-	setup_reorder_levels(p)
 	setup_users(p)
 
 
@@ -185,26 +184,6 @@ def setup_prices(p):
 					"price_list_rate": rate,
 				}
 			).insert(ignore_permissions=True)
-
-
-def setup_reorder_levels(p):
-	from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import get_settings
-
-	warehouse = get_settings().raw_materials_warehouse
-	for code, rule in p.RAW.items():
-		item = frappe.get_doc("Item", code)
-		if any(row.warehouse == warehouse for row in item.reorder_levels):
-			continue
-		item.append(
-			"reorder_levels",
-			{
-				"warehouse": warehouse,
-				"warehouse_reorder_level": rule["reorder_level"],
-				"warehouse_reorder_qty": rule["reorder_qty"],
-				"material_request_type": "Purchase",
-			},
-		)
-		item.save(ignore_permissions=True)
 
 
 def setup_users(p):
