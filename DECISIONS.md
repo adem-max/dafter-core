@@ -146,6 +146,8 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Total HT (what the lines add up to), Remise, Total HT après remise, then
   each tax after the discount, then TTC. It used to print the discounted HT
   and subtract the discount again under the taxes.
+- **"Contre-remboursement" is a payment mode** (20 October 2026): dz_cod
+  invoices an online order when it is delivered, paid to the courier.
 - **A credit note prints as "FACTURE D'AVOIR"** with its original invoice,
   amounts and words positive ("Arrêté le présent avoir à la somme de…"):
   ERPNext stores it with negative amounts, which printed as a "FACTURE" of

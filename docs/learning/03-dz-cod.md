@@ -212,6 +212,18 @@ over several Versements.
 - `load_delivered_orders` (*Charger les commandes livrées*) pre-fills one line
   per delivered order; `get_missing_orders` lists delivered orders not in the statement.
 
+### cod/invoicing.py (COD accounting)
+
+- `invoice_delivered_order`: when an order becomes Livrée (`on_update_after_submit`),
+  its Sales Invoice is made from the delivery note (`make_sales_invoice`), dated the
+  delivery, payment mode "Contre-remboursement", submitted and linked on the order
+  (`dz_sales_invoice`). dz_core's sales reports then count online sales.
+- `settlement_entry`: on a Versement's submit, one Journal Entry. Debit the bank and the
+  courier fees; credit each order's invoice with what the courier collected; an accepted
+  short payment is written off ("Écarts sur versements"); unknown parcels wait in
+  "Versements à identifier". Cancelling the Versement cancels the entry.
+- The accounts are COD Settings fields (section Comptabilité), made by `prepare` and on migrate.
+
 ### cod/phone_checks.py
 
 Warnings, never blocks (optional feature `phone_checks`): an order whose
@@ -380,7 +392,6 @@ courier (rolled back per class).
 
 ## What is not built (LATER.md)
 
-Accounting of COD sales (no Sales Invoice: delivered orders stay "To Bill"),
 Yalidine checked on a real account and its payments into Versements, ZR
 Express, an order intake endpoint for n8n, a commune master list, rates per
 courier, exchanges, hard stock reservation, SMS.

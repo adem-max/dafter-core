@@ -22,7 +22,8 @@ The exact list must be checked with an accountant before a client goes live.
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 LEGAL_FORMS = "\nAuto-entrepreneur\nPersonne physique\nEURL\nSARL\nSPA\nSNC\nAutre"
-PAYMENT_MODES = "\nEspèces\nChèque\nVirement\nCCP / BaridiMob\nCarte (TPE)\nÀ terme"
+# Contre-remboursement: an online order paid to the courier on delivery (dz_cod invoices it)
+PAYMENT_MODES = "\nEspèces\nChèque\nVirement\nCCP / BaridiMob\nCarte (TPE)\nContre-remboursement\nÀ terme"
 
 COMPANY_FIELDS = [
 	{
