@@ -211,7 +211,9 @@ class TestWorkbook(IntegrationTestCase):
 					"16000000001",
 				]
 			)
-			wb["Articles"].append([sugar, "Sucre", "Matières premières", "Kg", 120, None, "Non", "Non", None])
+			wb["Articles"].append(
+				[sugar, "Sucre", "Matières premières", "Kg", 120, None, "Non", "Non", None, 30, 100]
+			)
 			wb["Articles"].append(
 				[fruit, "Fraises", "Matières premières", "Kg", 300, None, "Non", "Non", None]
 			)
@@ -234,6 +236,12 @@ class TestWorkbook(IntegrationTestCase):
 		result = import_workbook(path, dry_run=0)
 		self.assertEqual(result["errors"], [])
 		self.assertTrue(frappe.db.get_value("Item", jam, "has_batch_no"))
+		reorder = frappe.db.get_value(
+			"Item Reorder",
+			{"parent": sugar},
+			["warehouse", "warehouse_reorder_level", "warehouse_reorder_qty"],
+		)
+		self.assertEqual(reorder, (self.settings.raw_materials_warehouse, 30, 100))
 		customer = frappe.db.get_value(
 			"Customer", {"customer_name": f"Client {t}"}, ["dz_phone", "dz_wilaya", "dz_nis", "dz_ai"]
 		)
