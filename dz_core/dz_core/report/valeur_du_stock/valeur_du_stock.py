@@ -2,7 +2,8 @@
 and item group.
 
 The value is the sum of the Stock Ledger's value changes up to the date, the
-same source as ERPNext's Stock Balance, so the two totals match. One row per
+same source as ERPNext's Stock Balance, so the two totals match. The quantity
+is the balance after the last move up to the date. One row per
 warehouse, then one row per item group under it, then the total.
 """
 
@@ -45,18 +46,27 @@ def get_columns():
 
 
 def get_rows(filters):
-	# One line per item and warehouse: what is left of it at the date
+	# One line per item and warehouse: what is left of it at the date. The
+	# quantity is the balance after the last move (a stock count posts no
+	# actual_qty, only the new balance); the value adds up every change.
 	lines = frappe.db.sql(
 		"""
 		SELECT sle.warehouse, i.item_group, sle.item_code,
-			SUM(sle.actual_qty) AS qty, SUM(sle.stock_value_difference) AS value
-		FROM `tabStock Ledger Entry` sle
+			sle.qty_after_transaction AS qty, sle.value
+		FROM (
+			SELECT item_code, warehouse, qty_after_transaction,
+				SUM(stock_value_difference) OVER (PARTITION BY item_code, warehouse) AS value,
+				ROW_NUMBER() OVER (
+					PARTITION BY item_code, warehouse ORDER BY posting_datetime DESC, creation DESC
+				) AS latest
+			FROM `tabStock Ledger Entry`
+			WHERE company = %(company)s
+				AND posting_date <= %(date)s
+				AND is_cancelled = 0
+				AND docstatus < 2
+		) sle
 		JOIN `tabItem` i ON i.name = sle.item_code
-		WHERE sle.company = %(company)s
-			AND sle.posting_date <= %(date)s
-			AND sle.is_cancelled = 0
-			AND sle.docstatus < 2
-		GROUP BY sle.warehouse, i.item_group, sle.item_code
+		WHERE sle.latest = 1
 		""",
 		{"company": filters.company, "date": filters.date},
 		as_dict=True,

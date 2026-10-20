@@ -45,6 +45,18 @@ class TestStockValue(IntegrationTestCase):
 			}
 		).insert()
 		receipt.submit()
+		# a stock count finds 35: it moves no "actual_qty", only the balance after it
+		count = frappe.get_doc(
+			{
+				"doctype": "Stock Reconciliation",
+				"company": cls.company,
+				"purpose": "Stock Reconciliation",
+				"items": [
+					{"item_code": cls.item, "warehouse": cls.warehouse, "qty": 35, "valuation_rate": 125}
+				],
+			}
+		).insert()
+		count.submit()
 
 	def rows(self, date=None):
 		_columns, rows, _message, _chart, _summary = valeur_du_stock.execute({"date": date})
@@ -53,20 +65,34 @@ class TestStockValue(IntegrationTestCase):
 	def group_row(self, date=None):
 		return next((row for row in self.rows(date) if row.get("item_group") == self.group), None)
 
-	def test_total_equals_stock_balance(self):
-		from erpnext.stock.report.stock_balance.stock_balance import execute as stock_balance
+	def stock_balance(self):
+		from erpnext.stock.report.stock_balance.stock_balance import execute
 
-		_columns, balance = stock_balance(
+		_columns, balance = execute(
 			frappe._dict(company=self.company, from_date=add_months(today(), -1), to_date=today())
 		)
-		total = next(row for row in self.rows() if row.get("is_total_row"))["value"]
-		self.assertAlmostEqual(total, sum(flt(row["bal_val"]) for row in balance), places=2)
+		return balance
+
+	def test_total_equals_stock_balance(self):
+		total = next(row for row in self.rows() if row.get("is_total_row"))
+		balance = self.stock_balance()
+		self.assertAlmostEqual(total["value"], sum(flt(row["bal_val"]) for row in balance), places=2)
+		self.assertAlmostEqual(total["qty"], sum(flt(row["bal_qty"]) for row in balance), places=3)
+
+	def test_quantities_equal_stock_balance(self):
+		balance = next(
+			row
+			for row in self.stock_balance()
+			if row["item_code"] == self.item and row["warehouse"] == self.warehouse
+		)
+		group = self.group_row()
+		self.assertEqual((group["qty"], group["value"]), (flt(balance["bal_qty"]), flt(balance["bal_val"])))
 
 	def test_rows_per_warehouse_and_item_group(self):
 		rows = self.rows()
 		group = self.group_row()
 		self.assertEqual((group["warehouse"], group["indent"]), (self.warehouse, 1))
-		self.assertEqual((group["items"], group["qty"], group["value"]), (1, 40, 40 * 125))
+		self.assertEqual((group["items"], group["qty"], group["value"]), (1, 35, 35 * 125))
 		warehouse = next(row for row in rows if not row["indent"] and row["warehouse"] == self.warehouse)
 		children = [row for row in rows if row["indent"] == 1 and row["warehouse"] == self.warehouse]
 		self.assertAlmostEqual(warehouse["value"], sum(row["value"] for row in children), places=2)
