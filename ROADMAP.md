@@ -35,8 +35,8 @@ Goal: you can set up a client and show it, without help.
   Done when: a new Sales Invoice prints as Facture DZ without touching Print Settings.
 - [ ] **Check the PDF in the browser.** Start the web server (`bench start`), open an invoice, click PDF.
   Done when: the PDF matches the sample (French amount in words, legal mentions, stamp box).
-- [ ] **French and Arabic labels.** Complete `dz_core/translations/` (started with the wilaya and contact labels moved from dafter-cod) for every label dz_core adds (fields, settings, messages), and copy dafter-cod's translation test so a forgotten label fails.
-  Done when: a user with language Arabic sees Arabic labels on the fields dz_core adds.
+- [ ] **French and Arabic labels.** Complete `dz_core/translations/` (started with the wilaya and contact labels moved from dafter-cod) for every label dz_core adds (fields, settings, messages), and copy dafter-cod's translation test so a forgotten label fails. Add the Arabic names of the 69 wilayas (DZ Wilaya, moved here from dafter-cod's LATER.md #11).
+  Done when: a user with language Arabic sees Arabic labels on the fields dz_core adds, and the wilayas in Arabic.
 - [x] **Clean up demo noise.** The setup wizard leaves English item groups (Products, Raw Material, Services...). Done 19 Oct: deleted when unused, Services kept (DECISIONS.md, Setup).
   Done when: the Item Group list shows only what the sector needs, or the choice is written in DECISIONS.md.
 
@@ -54,16 +54,16 @@ Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). 
   Done 19 Oct: each finished batch's rate is fabric, thread, labels and bag plus labour (Stock Ledger), and follows the jersey price rise.
 - [x] **Cost per product report.** Raw material cost per unit from the BOM, selling price, margin.
   Done when: the confiture in the food demo shows its cost from fruit, sugar and jar prices, and changing the sugar price changes the cost.
-  Done 20 Oct: report "Coût de revient" (strawberry jam 250 g: 140.18 DA of materials + 25 of labour, 52.8 % margin); a dearer sugar receipt moves it (tests/test_reports.py). Also "À produire".
+  Done 20 Oct: report "Coût de revient" (strawberry jam 250 g: 140.18 DA of materials + 25 of labour, 52.8 % margin); a dearer sugar receipt moves it (tests/test_reports.py). Also "À produire". Same figures on the demo load of 20 Oct (docs/DEMO.md).
 - [x] **Stock value report.** Value of stock per warehouse and per item group, at a chosen date.
   Done when: totals match ERPNext's Stock Balance report on the demo site.
-  Done 20 Oct: report "Valeur du stock"; food demo 3 240 800.31 DA, clothing 6 013 458.00 DA, both equal to Stock Balance.
+  Done 20 Oct: report "Valeur du stock", equal to Stock Balance on both demos (load of 20 Oct: food 3 024 458.39 DA, clothing 5 970 686.50 DA).
 - [x] **Sales per month report.** Per product and per customer, with the month-on-month change.
   Done when: it opens on the demo site with 3 months of data and the totals match the invoices.
-  Done 20 Oct: report "Ventes par mois" (July to October); totals equal the invoices on both demos (7 360 570 and 3 848 950 DA HT). The change compares the last two full months.
+  Done 20 Oct: report "Ventes par mois" (July to October); totals equal the invoices on both demos (load of 20 Oct: 7 724 100 and 3 956 050 DA HT). The change compares the last two full months.
 - [x] **Low stock alert.** Reorder levels from the import workbook (new optional column), shown on a simple workspace.
   Done when: a raw material below its level appears on the workspace.
-  Done 20 Oct: counter "À acheter" and chart "À acheter : sous le seuil" on the Atelier home page, naming each material under its level (food demo: 2, clothing demo: 3).
+  Done 20 Oct: counter "À acheter" and chart "À acheter : sous le seuil" on the Atelier home page, naming each material under its level (load of 20 Oct: food demo 5, clothing demo 2).
 - [x] **Workspace "Atelier".** One home page: what to produce, what to buy, today's sales, the three reports.
   Done when: a new user lands there after login and can reach every daily task in one click.
   Done 20 Oct: the 6 demo logins (gérant, production/atelier, ventes in Arabic) land on /desk/atelier; each sees the counters, charts and links of their role, without error. The login itself needed a hook (`get_website_user_home_page`): Frappe 16.51 sends desk users to /desk, its app list, whatever the default app.
@@ -109,7 +109,7 @@ Checkpoint 28 Feb 2027: one pilot live and using it daily, one paying client who
 
 ## Later (not before a client asks)
 
-- Encre & Fil, the COD demo in dafter-cod, also produces: BOMs (blank t-shirt + print) and work orders on top of its orders, to show Pack Atelier + Vente en ligne on one site. First of these once Phase 2 is done, or sooner if an online seller who makes their products is in the pipeline
+- Encre & Fil, the COD demo in dafter-cod, also produces: BOMs (blank t-shirt + print) and work orders on top of its orders, to show Pack Atelier + Vente en ligne on one site. First of these now that Phase 2 is done (20 Oct 2026), or sooner if an online seller who makes their products is in the pipeline
 - Cosmetics demo data on the food template (same mechanics: recipes by weight, batches, expiry) when a cosmetics prospect is in the pipeline
 - A third sector template (bakery, carpentry, printing...) when a client in it signs
 - Per-size BOMs for precise clothing costing (paid extra)
