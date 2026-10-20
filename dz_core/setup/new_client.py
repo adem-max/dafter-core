@@ -13,7 +13,8 @@ opening-balance account and fills DZ Core Settings. Safe to run twice:
 whatever already exists is skipped.
 
 It also makes "Facture DZ" and "Bon de livraison DZ" the default print formats
-(unless the client already chose others).
+(unless the client already chose others), and the Atelier home page the page
+users land on after login.
 
 Stays manual, because it differs per client: the company's legal mentions
 (Company form, section "Mentions légales"), users, then the client's data
@@ -46,6 +47,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	set_default_print_formats()
 	allow_printing_cancelled()
 	set_address_template()
+	make_atelier_the_home_page()
 
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
@@ -55,6 +57,19 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	frappe.db.commit()
 	print(f"{company} is ready ({sector}, {tax_regime}).")
 	print("Next: legal mentions on the Company form, users, then the import workbook.")
+
+
+def make_atelier_the_home_page():
+	"""After login, open the Atelier home page instead of ERPNext's app list
+	(route from add_to_apps_screen in hooks.py). A user can still pick another
+	default app for themselves. An online-sales client then runs dz_cod's
+	prepare, which makes COD the home page instead."""
+	from frappe.core.doctype.system_settings.system_settings import clear_system_settings_cache
+
+	frappe.db.set_single_value("System Settings", "default_app", "dz_core")
+	# System Settings are cached per process: drop the copies so it applies now
+	clear_system_settings_cache()
+	frappe.local.system_settings = None
 
 
 def set_default_print_formats():

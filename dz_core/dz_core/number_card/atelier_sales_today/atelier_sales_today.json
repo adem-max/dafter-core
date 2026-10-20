@@ -1,0 +1,23 @@
+{
+ "aggregate_function_based_on": "base_net_total",
+ "color": "#29CD42",
+ "creation": "2026-10-20 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Sales Invoice",
+ "dynamic_filters_json": "[]",
+ "filters_json": "[[\"Sales Invoice\", \"docstatus\", \"=\", 1], [\"Sales Invoice\", \"posting_date\", \"Timespan\", \"today\"]]",
+ "function": "Sum",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Ventes du jour",
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "Atelier Sales Today",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

@@ -12,3 +12,39 @@ A acheter,للشراء
 A produire,للإنتاج
 Valeur du stock,قيمة المخزون
 Ventes par mois,المبيعات الشهرية
+Atelier,الورشة
+Accueil,الرئيسية
+Commandes,الطلبيات
+Livraisons,التسليمات
+Factures,الفواتير
+Paiements,المدفوعات
+Fabrication,التصنيع
+Achats,المشتريات
+Réceptions,الاستلامات
+Articles,الأصناف
+Clients,الزبائن
+Rapports,التقارير
+Données,البيانات
+Nomenclatures,قوائم المكونات
+Fournisseurs,المورّدون
+Prix,الأسعار
+Paramètres DZ Core,إعدادات DZ Core
+Balance âgée clients,أعمار ديون الزبائن
+Stock par entrepôt,المخزون حسب المستودع
+Au quotidien,العمل اليومي
+Commandes clients,طلبيات الزبائن
+Bons de livraison,سندات التسليم
+Ordres de fabrication,أوامر التصنيع
+Commandes fournisseurs,طلبيات الشراء
+Ventes du jour,مبيعات اليوم
+Commandes à livrer,طلبيات للتسليم
+Fabrication en cours,تصنيع جارٍ
+À acheter,للشراء
+Factures en retard,فواتير متأخرة
+Ventes par mois (HT),المبيعات الشهرية (دون رسوم)
+Valeur du stock par entrepôt,قيمة المخزون حسب المستودع
+À acheter : sous le seuil,للشراء: تحت حد إعادة الطلب
+En stock,في المخزون
+Seuil,حد إعادة الطلب
+"Le chiffre d'affaires HT des factures validées, mois par mois.",رقم الأعمال دون رسوم للفواتير المعتمدة، شهراً بشهر.
+Aucune matière sous son seuil de réapprovisionnement.,لا توجد مادة تحت حد إعادة الطلب.

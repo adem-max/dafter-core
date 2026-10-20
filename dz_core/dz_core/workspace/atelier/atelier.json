@@ -1,0 +1,280 @@
+{
+ "app": "dz_core",
+ "charts": [
+  {
+   "chart_name": "Atelier Sales Per Month",
+   "label": "Ventes par mois (HT)"
+  },
+  {
+   "chart_name": "Atelier Stock Value",
+   "label": "Valeur du stock par entrepôt"
+  },
+  {
+   "chart_name": "Atelier To Buy",
+   "label": "À acheter : sous le seuil"
+  }
+ ],
+ "content": "[{\"id\": \"atlnum0000\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Ventes du jour\", \"col\": 4}}, {\"id\": \"atlnum0001\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Commandes à livrer\", \"col\": 4}}, {\"id\": \"atlnum0002\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Fabrication en cours\", \"col\": 4}}, {\"id\": \"atlnum0003\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"À acheter\", \"col\": 4}}, {\"id\": \"atlnum0004\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Factures en retard\", \"col\": 4}}, {\"id\": \"atlcht0000\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Ventes par mois (HT)\", \"col\": 12}}, {\"id\": \"atlcht0001\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Valeur du stock par entrepôt\", \"col\": 6}}, {\"id\": \"atlcht0002\", \"type\": \"chart\", \"data\": {\"chart_name\": \"À acheter : sous le seuil\", \"col\": 6}}, {\"id\": \"atlcrd0000\", \"type\": \"card\", \"data\": {\"card_name\": \"Au quotidien\", \"col\": 4}}, {\"id\": \"atlcrd0001\", \"type\": \"card\", \"data\": {\"card_name\": \"Rapports\", \"col\": 4}}, {\"id\": \"atlcrd0002\", \"type\": \"card\", \"data\": {\"card_name\": \"Données\", \"col\": 4}}]",
+ "creation": "2026-10-20 12:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "factory",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Atelier",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Au quotidien",
+   "link_count": 7,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commandes clients",
+   "link_count": 0,
+   "link_to": "Sales Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bons de livraison",
+   "link_count": 0,
+   "link_to": "Delivery Note",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Factures",
+   "link_count": 0,
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Paiements",
+   "link_count": 0,
+   "link_to": "Payment Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ordres de fabrication",
+   "link_count": 0,
+   "link_to": "Work Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commandes fournisseurs",
+   "link_count": 0,
+   "link_to": "Purchase Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Réceptions",
+   "link_count": 0,
+   "link_to": "Purchase Receipt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rapports",
+   "link_count": 7,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Coût de revient",
+   "link_count": 0,
+   "link_to": "Cout de revient",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "À produire",
+   "link_count": 0,
+   "link_to": "A produire",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "À acheter",
+   "link_count": 0,
+   "link_to": "A acheter",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Valeur du stock",
+   "link_count": 0,
+   "link_to": "Valeur du stock",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Ventes par mois",
+   "link_count": 0,
+   "link_to": "Ventes par mois",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Balance âgée clients",
+   "link_count": 0,
+   "link_to": "Accounts Receivable",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Stock par entrepôt",
+   "link_count": 0,
+   "link_to": "Stock Balance",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Données",
+   "link_count": 5,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Articles",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Nomenclatures",
+   "link_count": 0,
+   "link_to": "BOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Clients",
+   "link_count": 0,
+   "link_to": "Customer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fournisseurs",
+   "link_count": 0,
+   "link_to": "Supplier",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Prix",
+   "link_count": 0,
+   "link_to": "Item Price",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "Atelier",
+ "number_cards": [
+  {
+   "label": "Ventes du jour",
+   "number_card_name": "Atelier Sales Today"
+  },
+  {
+   "label": "Commandes à livrer",
+   "number_card_name": "Atelier Orders To Deliver"
+  },
+  {
+   "label": "Fabrication en cours",
+   "number_card_name": "Atelier Work In Progress"
+  },
+  {
+   "label": "À acheter",
+   "number_card_name": "Atelier To Buy"
+  },
+  {
+   "label": "Factures en retard",
+   "number_card_name": "Atelier Overdue Invoices"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 29.0,
+ "shortcuts": [],
+ "standard": 1,
+ "title": "Atelier",
+ "type": "Workspace"
+}

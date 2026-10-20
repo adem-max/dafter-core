@@ -10,3 +10,39 @@ A acheter,To buy
 A produire,To produce
 Valeur du stock,Stock value
 Ventes par mois,Sales per month
+Atelier,Atelier
+Accueil,Home
+Commandes,Orders
+Livraisons,Deliveries
+Factures,Invoices
+Paiements,Payments
+Fabrication,Manufacturing
+Achats,Purchases
+Réceptions,Receipts
+Articles,Items
+Clients,Customers
+Rapports,Reports
+Données,Data
+Nomenclatures,Bills of materials
+Fournisseurs,Suppliers
+Prix,Prices
+Paramètres DZ Core,DZ Core settings
+Balance âgée clients,Customer ageing
+Stock par entrepôt,Stock per warehouse
+Au quotidien,Day to day
+Commandes clients,Sales orders
+Bons de livraison,Delivery notes
+Ordres de fabrication,Work orders
+Commandes fournisseurs,Purchase orders
+Ventes du jour,Today's sales
+Commandes à livrer,Orders to deliver
+Fabrication en cours,Manufacturing in progress
+À acheter,To buy
+Factures en retard,Overdue invoices
+Ventes par mois (HT),Sales per month (excl. tax)
+Valeur du stock par entrepôt,Stock value per warehouse
+À acheter : sous le seuil,To buy: under the reorder level
+En stock,In stock
+Seuil,Reorder level
+"Le chiffre d'affaires HT des factures validées, mois par mois.","Sales excluding tax of submitted invoices, month by month."
+Aucune matière sous son seuil de réapprovisionnement.,No material under its reorder level.

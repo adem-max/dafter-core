@@ -93,10 +93,12 @@ def once(profile, step, function):
 
 
 def setup_company(p, start):
-	from dz_core.setup.new_client import prepare
+	from dz_core.setup.new_client import make_atelier_the_home_page, prepare
 
 	if frappe.db.get_single_value("DZ Core Settings", "company") != p.COMPANY:
 		prepare(p.COMPANY, p.ABBR, p.SECTOR, p.TAX_REGIME)
+	# a demo prepared before the home page existed lands there too
+	make_atelier_the_home_page()
 	ensure_fiscal_years(start)
 	company = frappe.get_doc("Company", p.COMPANY)
 	company.update(p.LEGAL)
