@@ -39,6 +39,53 @@ to it, without changing anything: `bench --site food-demo.localhost serve
 --port 8001`, then http://food-demo.localhost:8001 (clothing: port 8002).
 Or make it the default (dafter-cod docs/LOCAL_TEST.md section 5).
 
+## The three demo sites on one bench
+
+The two producer demos above, plus the online shop **Encre & Fil**
+(dafter-cod docs/DEMO.md: ERPNext + dz_cod, which installs dz_core first):
+
+```bash
+cd ~/frappe-bench
+# food producer and clothing workshop (Pack Atelier): "Create a demo site" above
+# online shop (Pack Atelier + Vente en ligne), 2 to 5 minutes
+bench new-site demo.localhost --install-app erpnext
+bench --site demo.localhost install-app dz_cod
+bench --site demo.localhost execute dz_cod.demo.loader.load
+```
+
+| Site | Pack | Port (`demo_tunnels.sh`) | Owner login |
+| --- | --- | --- | --- |
+| `food-demo.localhost` | Atelier, régime réel | 8001 | `gerant@food-demo.localhost` |
+| `atelier-demo.localhost` | Atelier, IFU | 8002 | `gerant@atelier-demo.localhost` |
+| `demo.localhost` | Atelier + Vente en ligne | 8003 | `gerant@demo.localhost` (added by `demo_tunnels.sh`) |
+
+The shop's loader makes no demo login (only `Administrator`, with the
+password chosen at `new-site`); `scripts/demo_tunnels.sh` adds
+`gerant@demo.localhost` with the manager and user roles of sales, stock and
+accounts, password `Demo-2026!`.
+
+## Show the demos from another computer
+
+`scripts/demo_tunnels.sh` serves each demo on its own port and opens a
+Cloudflare quick tunnel to each (no account; `cloudflared` in
+`~/.local/bin`), then prints one public `https://….trycloudflare.com` link
+per site:
+
+```bash
+bash ~/frappe-bench/apps/dz_core/scripts/demo_tunnels.sh          # start (bench start must be running)
+bash ~/frappe-bench/apps/dz_core/scripts/demo_tunnels.sh stop     # close the links and the demo servers
+```
+
+From Windows: `wsl -d Ubuntu-24.04 -- bash ~/frappe-bench/apps/dz_core/scripts/demo_tunnels.sh`.
+
+- The links change at every start, and die when WSL stops or the PC sleeps.
+- Anyone with a link reaches the login page: stop the tunnels after the demo.
+- Live updates (Frappe's realtime, port 9000) don't go through the tunnel:
+  pages, reports and printing work, notifications don't pop up.
+- Walking the script changes the data (the shop's steps create delivery
+  notes and a Versement): reload, or cancel the test documents afterwards.
+- Logs: `~/demo-tunnels/` (one `serve-<port>.log` and `tunnel-<port>.log` per site).
+
 ## Logins
 
 | Login | Role in the demo | Language |

@@ -83,7 +83,13 @@ bench --site atelier-demo.localhost execute dz_core.demo.loader.load --kwargs "{
 ```
 
 On dedicated sites with ERPNext + dz_core only. Logins, what each demo shows,
-and a 10-minute script for prospects: `docs/DEMO.md`.
+and a 10-minute script for prospects: `docs/DEMO.md`. To open the three demos
+(with dafter-cod's shop) from another computer: `scripts/demo_tunnels.sh`.
+
+## Learning the code
+
+`docs/learning/`: a guided walk through the three repos (dz_core, dz_cod,
+dz_hub), the tools, every file and the lines that matter in it.
 
 ## Not done yet (full plan: ROADMAP.md)
 
