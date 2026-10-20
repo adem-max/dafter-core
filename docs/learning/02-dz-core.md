@@ -289,9 +289,11 @@ vendor can change it.
 ```python
 def enabled():
 	known = catalog()                 # merge of every installed app's dz_features dicts
-	value = configured()              # the list in site_config, or None
+	value = configured()              # the list in site_config, "all", or None
 	if value is None:
-		return set(known)             # key missing = everything on (demo, test, old sites)
+		return set()                  # key missing = the base only
+	if value == ALL:
+		return set(known)             # "all": demo and test sites
 	return {name for name in value if name in known}
 
 def requires_feature(feature):        # decorator, put UNDER @frappe.whitelist()
@@ -314,8 +316,11 @@ def apply_features():                 # after every migrate: migrate re-enables 
   does not install the client apps, and `frappe.get_hooks(app_name=...)` and
   `frappe.get_attr` refuse them there.
 - `boot(bootinfo)` → `frappe.boot.dz_features` in the browser.
-- `set_features(list | None)` writes site_config and applies; `None` removes
-  the key (everything on). `move_legacy_key()` moves the old `dz_cod_features`.
+- `set_features(list | ALL)` writes site_config and applies. `move_legacy_key()`
+  moves the old `dz_cod_features`.
+- `patches/keep_all_features_on_existing_sites.py`: until 20 October 2026 a
+  missing key meant everything; sites made before got "all" on migrate. New
+  sites skip it (Frappe marks an app's patches done on install).
 
 `commands.py` adds the bench command (Frappe reads `commands = [...]`):
 
@@ -533,7 +538,7 @@ Phase 1.
 | --- | --- |
 | `test_core.py` | `prepare()` guard and idempotence, sector template, warehouses per group, tax regimes, default print formats, cancelled invoices printable, address template, wizard groups removed, legal fields, the workbook (errors create nothing, full import then re-import, older templates), invoice rendering, amounts in French words |
 | `test_places_and_phones.py` | phone formats (unit), 69 wilayas and parents, `simplify`, `find_wilaya`, Customer phone normalized |
-| `test_features.py` | catalogue per app, missing key = everything, list followed, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
+| `test_features.py` | catalogue per app, missing key = base only, "all", list followed, the patch for older sites, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
 | `test_reports.py` | Coût de revient follows the last purchase; À acheter; À produire |
 | `test_reports_stock_sales.py` | Valeur du stock equals Stock Balance (total, quantities, at a date); Ventes par mois equals the invoices, evolution, by customer, credit notes |
 | `test_home.py` | home page records loaded, counters equal the lists, a material under its level shows, login opens Atelier |

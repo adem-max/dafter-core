@@ -289,6 +289,11 @@ bench --site restore-test.localhost restore "$B-database.sql.gz" \
 KEY=$(python3 -c "import json;print(json.load(open('$B-site_config_backup.json')).get('encryption_key',''))")
 [ -n "$KEY" ] && bench --site restore-test.localhost set-config encryption_key "$KEY"
 
+# And the client's optional features (key dz_features): a site without the
+# key has the base only, so a restore that forgets it switches their options off
+FEATURES=$(python3 -c "import json;print(repr(json.load(open('$B-site_config_backup.json')).get('dz_features')))")
+[ "$FEATURES" != "None" ] && bench --site restore-test.localhost set-config --parse dz_features "$FEATURES"
+
 bench --site restore-test.localhost migrate                 # brings the restored data to the installed app versions
 ```
 
@@ -297,9 +302,10 @@ backups made *encrypted* with `backup_encryption_key`, which this guide does
 not use. Do not confuse it with the site's `encryption_key`.)
 
 Check in the test site: number of invoices (or orders), the last date, a PDF with an
-image, a courier's API token. When satisfied, either drop the test site
+image, a courier's API token, the options (`bench --site restore-test.localhost dz-features --list`).
+When satisfied, either drop the test site
 (`bench drop-site restore-test.localhost --force`) or, for a real disaster,
-run the same `restore` (and `set-config encryption_key`) on the live site name.
+run the same `restore` (and both `set-config`) on the live site name.
 
 **Do a test restore every month** — a backup you never restored is only a hope.
 

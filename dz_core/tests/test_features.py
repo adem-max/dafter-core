@@ -43,8 +43,12 @@ class TestFeatures(IntegrationTestCase):
 	def test_catalog_knows_which_app_declared_each_feature(self):
 		self.assertEqual(F.catalog()["demo_feature"]["app"], "dz_core")
 
-	def test_missing_key_means_everything(self):
-		self.assertEqual(F.enabled(), {"demo_feature"})
+	def test_missing_key_means_the_base_only(self):
+		self.assertEqual(F.enabled(), set())
+
+	def test_all_means_every_feature(self):
+		with site_list(F.ALL):
+			self.assertEqual(F.enabled(), {"demo_feature"})
 
 	def test_list_is_followed_and_unknown_names_ignored(self):
 		with site_list([]):
@@ -61,14 +65,33 @@ class TestFeatures(IntegrationTestCase):
 		def action():
 			return "done"
 
-		self.assertEqual(action(), "done")
+		with site_list(["demo_feature"]):
+			self.assertEqual(action(), "done")
 		with site_list([]), self.assertRaises(F.FeatureNotEnabled):
 			action()
+		with self.assertRaises(F.FeatureNotEnabled):
+			action()  # no list at all
 
 	def test_boot_lists_the_features(self):
 		bootinfo = frappe._dict()
-		F.boot(bootinfo)
+		with site_list(F.ALL):
+			F.boot(bootinfo)
 		self.assertEqual(bootinfo.dz_features, ["demo_feature"])
+
+	def test_sites_made_before_keep_every_feature(self):
+		# patches/keep_all_features_on_existing_sites.py: no list becomes "all"
+		from dz_core.patches import keep_all_features_on_existing_sites as old_sites
+
+		with (
+			patch("frappe.installer.update_site_config") as write,
+			patch("frappe.get_site_config", return_value=dict(frappe.local.conf)),
+		):
+			old_sites.execute()
+			write.assert_called_once_with(F.CONFIG_KEY, F.ALL)
+			write.reset_mock()
+			with site_list([]):
+				old_sites.execute()  # a site with a list (a client's) is left alone
+			write.assert_not_called()
 
 
 class TestBenchCatalog(IntegrationTestCase):

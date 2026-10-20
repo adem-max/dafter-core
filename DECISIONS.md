@@ -107,6 +107,12 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Each app declares its own features with a `dz_features` hook pointing at
   a dict; dz_core has none of its own yet. The old key `dz_cod_features` is
   still read and moved on migrate; `dz-cod-features` stays as an alias.
+- **No feature list means the base only** (20 October 2026): it meant
+  "everything", so a client site made by hand, or restored on a new server
+  without its site_config, had every paid option. Demo and test sites say
+  `"all"`; a patch wrote it on the sites made before, and new sites skip it
+  (Frappe marks an app's patches done on install). A restore copies the list
+  from the backup's site_config (docs/DEPLOY.md, section 10).
 - **The catalogue is read with plain imports for the hub**
   (`bench_catalog`): the hub site does not install the client apps, and
   `frappe.get_hooks(app_name=...)` and `frappe.get_attr` both refuse an app

@@ -22,10 +22,15 @@ vendor (who has the server, or the hub) can change it:
     bench --site <site> dz-features --list
     bench --site <site> dz-features --enable phone_checks
     bench --site <site> dz-features --set courier_api,labels_reports
+    bench --site <site> dz-features --all          # "all": demo and test sites
 
 Rules (dafter-cod docs/FEATURES.md):
-- key missing: EVERY feature of the site's apps is on (demo, test and older
-  sites keep working); a list, even empty, is followed exactly.
+- key missing: the base only, no option (a client site gets what it pays
+  for, even one made by hand or restored without its site_config);
+- "all": every feature of the site's apps (demo and test sites);
+- a list, even empty: exactly that list.
+  Sites made before 20 October 2026 had "key missing = everything": a patch
+  wrote "all" on them (patches/keep_all_features_on_existing_sites.py).
 - a feature that is off is hidden: buttons (JS reads frappe.boot.dz_features),
   reports and print formats (disabled records drop out of menus), and the
   server refuses its actions with "Fonction non incluse dans votre offre".
@@ -45,6 +50,7 @@ from frappe import _
 
 CONFIG_KEY = "dz_features"
 LEGACY_KEYS = ("dz_cod_features",)
+ALL = "all"  # site_config value for every feature (demo and test sites)
 MESSAGE = "Fonction non incluse dans votre offre"
 HOOK = "dz_features"
 
@@ -95,12 +101,12 @@ def bench_catalog():
 
 
 def configured():
-	"""The list in site_config, or None when the key is missing."""
+	"""The site's setting: a list, ALL, or None when the key is missing."""
 	value = frappe.conf.get(CONFIG_KEY)
 	if value is None:
 		value = next((frappe.conf.get(key) for key in LEGACY_KEYS if frappe.conf.get(key) is not None), None)
-	if value is None:
-		return None
+	if value is None or value == ALL:
+		return value
 	if isinstance(value, str):  # tolerate "a,b" typed by hand
 		value = [part.strip() for part in value.split(",") if part.strip()]
 	return list(value)
@@ -111,6 +117,8 @@ def enabled():
 	known = catalog()
 	value = configured()
 	if value is None:
+		return set()  # no list: the base only
+	if value == ALL:
 		return set(known)
 	return {name for name in value if name in known}
 
@@ -164,11 +172,11 @@ def apply_features():
 
 
 def set_features(features):
-	"""Write the site's list (None = remove the key = everything) and apply it."""
+	"""Write the site's setting (a list, or ALL for every feature) and apply it."""
 	from frappe.installer import update_site_config
 
-	if features is None:
-		update_site_config(CONFIG_KEY, "None")
+	if features == ALL:
+		update_site_config(CONFIG_KEY, ALL)
 	else:
 		known = catalog()
 		unknown = [name for name in features if name not in known]
