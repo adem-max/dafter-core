@@ -11,6 +11,7 @@ from frappe.apps import get_default_path
 from frappe.desk.doctype.number_card.number_card import get_result
 from frappe.tests import IntegrationTestCase
 from frappe.utils import flt, random_string, today
+from frappe.website.utils import get_home_page
 
 from dz_core.dz_core.report.a_acheter import a_acheter
 from dz_core.reports import get_to_buy_card
@@ -93,3 +94,6 @@ class TestAtelierHome(IntegrationTestCase):
 		make_atelier_the_home_page()
 		frappe.db.set_value("User", frappe.session.user, "default_app", "")
 		self.assertEqual(get_default_path(), "/desk/atelier")
+		# what the login answer sends a desk user to (Frappe alone says "desk", its app list)
+		frappe.cache.delete_key("home_page")
+		self.assertEqual(get_home_page(), "desk/atelier")

@@ -66,7 +66,9 @@ Two demos, one per sector template (decided 19 Oct 2026, DECISIONS.md "Demos"). 
   Done 20 Oct: counter "À acheter" and chart "À acheter : sous le seuil" on the Atelier home page, naming each material under its level (food demo: 2, clothing demo: 3).
 - [x] **Workspace "Atelier".** One home page: what to produce, what to buy, today's sales, the three reports.
   Done when: a new user lands there after login and can reach every daily task in one click.
-  Done 20 Oct: the 6 demo logins (gérant, production/atelier, ventes in Arabic) land on /desk/atelier; each sees the counters, charts and links of their role, without error.
+  Done 20 Oct: the 6 demo logins (gérant, production/atelier, ventes in Arabic) land on /desk/atelier; each sees the counters, charts and links of their role, without error. The login itself needed a hook (`get_website_user_home_page`): Frappe 16.51 sends desk users to /desk, its app list, whatever the default app.
+- [x] **Demo script.** Both demos rebuilt and the 10-minute script walked in the browser on the new reports and home page.
+  Done 20 Oct: docs/DEMO.md, with the figures of that load.
 
 Checkpoint 29 Nov: demo sites ready to show, 8+ discovery conversations held (launch plan).
 
