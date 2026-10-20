@@ -4,7 +4,7 @@ The vendor's own site to manage every Daftar client: who they are, which
 site is theirs, what they pay for (packs and options), their monthly
 invoices, and suspension when they don't pay. Installed **only** on the hub
 site (`hub.localhost` here), never on a client site. `required_apps =
-["erpnext"]`. 16 tests. Renamed from `dz_cod_hub` on 19 October 2026, when it
+["erpnext"]`. 22 tests. Renamed from `dz_cod_hub` on 19 October 2026, when it
 started managing producers too.
 
 ```

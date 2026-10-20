@@ -106,3 +106,7 @@ stays in dz_cod and why, and the rule for new work.
 bench --site test.localhost set-config allow_tests true
 bench --site test.localhost run-tests --app dz_core     # 63 tests (13 unit + 50 integration)
 ```
+
+The suite also passes on a site with ERPNext and dz_core only (the dev bench
+keeps `test-core.localhost` for that). Every push runs pre-commit and the tests
+on a fresh site on GitHub (`.github/workflows/ci.yml`).

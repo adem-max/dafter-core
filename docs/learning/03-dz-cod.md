@@ -5,7 +5,7 @@ cash-on-delivery order desk for Algerian sellers (Instagram, Facebook,
 website). Phone confirmation, stock reservation, shipping fees by wilaya,
 courier hand-over, returns, courier cash settlement ("Versement"), webhooks
 to n8n, three reports, a demo shop. `required_apps = ["erpnext", "dz_core"]`.
-98 tests (21 unit + 77 integration).
+101 tests (24 unit + 77 integration).
 
 **The deep course on this app already exists:** dafter-cod
 `docs/STUDY_GUIDE.md` (mental model, the lines that matter, "break it on
