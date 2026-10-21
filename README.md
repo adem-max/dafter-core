@@ -104,7 +104,7 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 65 tests (13 unit + 52 integration)
+bench --site test.localhost run-tests --app dz_core     # 68 tests (13 unit + 55 integration)
 ```
 
 The suite also passes on a site with ERPNext and dz_core only (the dev bench

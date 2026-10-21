@@ -131,9 +131,63 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   (scale from circular 14/MF/DGI/LF.2025; electronic payments are exempt),
   the G50 helper for régime réel, the turnover report for IFU, and the exact
   wording of the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable
-  in DZ Core Settings), and the stock accounts ERPNext maps by default for the
-  Algerian chart (a fresh site points "Default Inventory Account" at a class 3
-  services account).
+  in DZ Core Settings). The default accounts are below.
+
+## Default accounts (21 October 2026)
+
+- **ERPNext's setup wizard picks the wrong default accounts for the Algerian
+  chart.** It takes the last account of each type, so every client site (and
+  every demo) booked receivables in 4172 "Créances sur prestations en
+  cours", suppliers in 4213 "Soldes de tout compte restant dus" (a salary
+  account), the bank in 5176 "Société de bourse", the till in 5322 "Caisse
+  auxiliaire B" and stock in 3451 "Prestations de services". Found in the
+  end-to-end check of the 20 Oct review.
+- **`prepare()` now puts the SCF accounts there, by account number**
+  (`setup/accounts.py`, `set_default_accounts`). Only a default that is still
+  the wizard's pick, or empty, is replaced: a choice someone made is kept.
+  The patch `scf_default_accounts` did the same on the existing sites;
+  documents already posted keep their accounts (no client site was live; the
+  demos were reloaded). dz_cod's Versements bank follows (its patch
+  `settlement_bank_follows_company`).
+
+  | Default | Wizard's pick | Now |
+  | --- | --- | --- |
+  | Receivable | 4172 | 4111 Clients : ventes de biens et services |
+  | Payable | 4213 | 40132 Fournisseurs de stocks : nationaux privés |
+  | Bank / Cash | 5176 / 5322 | 5121 Comptes bancaires : dinars / 5311 Caisse principale |
+  | Stock received not billed | 4088 (or none) | 4081 Fournisseurs de stocks : factures non parvenues |
+  | Stock (company default) | 3451 | 35511 Produits finis, added under the group 3551 (the chart has no ledger for finished goods) |
+  | Warehouses | none | Matières premières 311, Travaux en cours 3311 (Produits en cours), Produits finis 35511 |
+  | Stock adjustment | 6032 | 6031 Variation des stocks de matières premières et fournitures |
+  | Income | 7001 Marchandises | 7011 Ventes de produits finis |
+  | Cost of goods sold | 6078 (a non-stock supplies account) | 7245 Variation de stocks de produits finis |
+  | Round-off | 766 Gains de change | 6588 Autres charges diverses de gestion courante |
+  | Depreciation / assets in progress | 6862 / 237 | 6812 / 2328 |
+
+  The modes of payment that pointed to the wizard's cash or bank account follow.
+- **To confirm with the accountant before the first client:**
+  1. **Cost of products sold in 7245** (SCF "déstockage"). ERPNext moves the
+     materials' cost into the finished goods' stock value when a batch is
+     made and never credits 72 at production, so 72 shows only the cost of
+     what was sold, and 601 "Matières consommées" stays empty. Is that
+     acceptable, or should the cost go to 601/600 and be reclassified at the
+     year end?
+  2. **One account for everything not on an item**: the company's cost
+     account (7245) is also what a purchase of a non-stock item falls back
+     to. Services, electricity, rent need their own expense account (61/62)
+     on the item, or they land in 7245.
+  3. **35511 "Produits finis"**, the account we added under 3551: number and name.
+  4. **Suppliers**: one default, 40132 (stocks, national, private). Service
+     suppliers (40162), foreign ones (40133) and public ones: per supplier
+     group?
+  5. **Stock count gaps**: ERPNext uses one account for both signs; 6031
+     (variation des stocks) or 6571/6572 "Écart de stocks"?
+  6. **Round-off** in 6588 (both signs), or 658/758.
+  7. **Online sellers who resell** instead of making: 700 / 30 / 600
+     (marchandises) instead of 701 / 355 / 7245.
+  8. **Bank**: one account, 5121. A client paid by CCP / BaridiMob: 5171?
+  9. **Fixed assets**: 6812 depreciation, 2328 in progress, 2818 accumulated
+     (ERPNext's pick, kept); per asset category when a client has assets.
 
 ## Invoices
 

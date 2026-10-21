@@ -4,7 +4,7 @@ The base every client gets (Pack Atelier): one-command setup, sector
 templates, the tax regime, legal invoices, the Excel import workbook, the
 69 wilayas, phone numbers, producer reports, the Atelier home page, the
 optional-feature switches, backups and the two producer demos.
-`required_apps = ["erpnext"]`. 65 tests (13 unit + 52 integration).
+`required_apps = ["erpnext"]`. 68 tests (13 unit + 55 integration).
 
 ```
 dafter-core/
@@ -91,6 +91,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
 	...
+	set_default_accounts(company)              # accounts.py: SCF defaults instead of the wizard's picks
 ```
 
 Step by step, the part to be able to tell without opening the file:
@@ -191,6 +192,17 @@ duty on cash, G50 helper, IFU turnover report.
 `opening_account(company)`: the company's leaf account of type "Temporary",
 else creates "Ouverture temporaire" under the liability root. Used by the
 opening stock import and the demos.
+
+`set_default_accounts(company)`: the setup wizard fills the Company's
+default accounts with the last account of each type in the Algerian chart
+(receivables in 4172, the bank in 5176, stock in 3451...). This puts the SCF
+accounts there by number (`COMPANY_ACCOUNTS`: 4111, 40132, 5121, 5311, 4081,
+35511, 6031, 7011, 7245, 6588, 6812, 2328), only where the wizard's pick or
+nothing is, so a choice someone made is kept. It adds 35511 "Produits finis"
+(the chart has no ledger for finished goods), gives the three warehouses
+311 / 3311 / 35511, and moves the modes of payment that pointed to the old
+cash or bank account. Patch `scf_default_accounts` did the same on existing
+sites. DECISIONS.md "Default accounts" lists what the accountant must confirm.
 
 ## setup/custom_fields.py
 
@@ -532,7 +544,7 @@ Phase 1.
 
 ## tests/
 
-`bench --site test.localhost run-tests --app dz_core` (65 tests).
+`bench --site test.localhost run-tests --app dz_core` (68 tests).
 
 | File | Checks |
 | --- | --- |
@@ -540,6 +552,7 @@ Phase 1.
 | `test_places_and_phones.py` | phone formats (unit), 69 wilayas and parents, `simplify`, `find_wilaya`, Customer phone normalized |
 | `test_features.py` | catalogue per app, missing key = base only, "all", list followed, the patch for older sites, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
 | `test_reports.py` | Coût de revient follows the last purchase; À acheter; À produire |
+| `test_accounts.py` | the SCF default accounts after `prepare()`, warehouses' stock accounts; the wizard's picks are replaced and a choice is kept; the patch twice |
 | `test_reports_stock_sales.py` | Valeur du stock equals Stock Balance (total, quantities, at a date); Ventes par mois equals the invoices, evolution, by customer, credit notes |
 | `test_home.py` | home page records loaded, counters equal the lists, a material under its level shows, login opens Atelier |
 | `test_restore_check.py` | counts, hooks from apps on top, a password from another key is reported |
