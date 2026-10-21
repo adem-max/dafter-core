@@ -74,7 +74,9 @@ def setup_item_groups(company, sector_kinds):
 	for group in SERVICE_GROUPS:
 		ensure_group(group, SERVICES_GROUP)
 	for group, kind in {**sector_kinds, **COMMON_GROUPS}.items():
-		set_group_accounts(company, group, kind)
+		# a sector group is made by apply_sector: an older site may lack one
+		if frappe.db.exists("Item Group", group):
+			set_group_accounts(company, group, kind)
 	for group, number in SERVICE_GROUPS.items():
 		set_service_account(company, group, number)
 

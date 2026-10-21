@@ -135,6 +135,9 @@ def convert_to_group(company, number, log):
 	if frappe.db.exists("GL Entry", {"account": account}):
 		log.append(f"{number} not converted to a group: it has ledger entries")
 		return
+	if not release_defaults(company, account, number):
+		log.append(f"{number} not converted to a group: someone chose it as a default")
+		return
 	doc = frappe.get_doc("Account", account)
 	doc.flags.ignore_permissions = True
 	doc.convert_ledger_to_group()
@@ -194,15 +197,37 @@ def move_opening_account(company, log):
 	log.append(f"{name} is now {number}, under class 47")
 
 
-def in_use(account):
-	"""Is the account a default somewhere (company, item group, mode of payment...)?"""
-	company = frappe.db.get_value("Account", account, "company")
-	company_fields = [
+def company_account_fields():
+	return [
 		f.fieldname
 		for f in frappe.get_meta("Company").fields
 		if f.fieldtype == "Link" and f.options == "Account"
 	]
-	if any(frappe.db.get_value("Company", company, field) == account for field in company_fields):
+
+
+def release_defaults(company, account, number):
+	"""ERPNext refuses to turn a company default into a group. A default the
+	setup wizard or an earlier Daftar version put on this account is cleared
+	(set_default_accounts then points it to the new ledgers, 65881...).
+	False when a default someone chose, or another use, keeps the account."""
+	from dz_core.setup.accounts import REPLACEABLE
+
+	cleared = {}
+	for field in company_account_fields():
+		if frappe.db.get_value("Company", company, field) == account:
+			if number not in REPLACEABLE.get(field, set()):
+				return False
+			cleared[field] = None
+	if cleared:
+		frappe.db.set_value("Company", company, cleared)
+		frappe.clear_document_cache("Company", company)
+	return not in_use(account)
+
+
+def in_use(account):
+	"""Is the account a default somewhere (company, item group, mode of payment...)?"""
+	company = frappe.db.get_value("Account", account, "company")
+	if any(frappe.db.get_value("Company", company, field) == account for field in company_account_fields()):
 		return True
 	for doctype, field in (
 		("Item Default", "default_inventory_account"),
