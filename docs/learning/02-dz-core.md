@@ -4,7 +4,7 @@ The base every client gets (Pack Atelier): one-command setup, sector
 templates, the tax regime, legal invoices, the Excel import workbook, the
 69 wilayas, phone numbers, producer reports, the Atelier home page, the
 optional-feature switches, backups and the two producer demos.
-`required_apps = ["erpnext"]`. 68 tests (13 unit + 55 integration).
+`required_apps = ["erpnext"]`. 81 tests (13 unit + 68 integration).
 
 ```
 dafter-core/
@@ -560,7 +560,7 @@ Phase 1.
 
 ## tests/
 
-`bench --site test.localhost run-tests --app dz_core` (68 tests).
+`bench --site test.localhost run-tests --app dz_core` (81 tests).
 
 | File | Checks |
 | --- | --- |

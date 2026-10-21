@@ -27,10 +27,13 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 
 Goal: you can set up a client and show it, without help.
 
+- [x] **SCF set-up** (0.3.0, 21 Oct 2026, from the advice doc "Daftar: SCF default accounts and compliance advice"): chart changes, default accounts, inventory accounts per item group, immutable ledger, no deletion of accounting documents, TVA per rate with the "Aide G50" report, the "Clôture du mois" report; COD parcels held at "Chez transporteur" until delivery, invoices paid into each courier's account 4671n, the delivery fee taxed like the goods.
+  Done when: the three suites pass locally and on GitHub, and the three demos are reloaded on it.
+  Still open (the doc's section 9): the expert-comptable's and the tax office's answers; Phase 4 (stamp duty, IFU registers, entry export and archive, SCF statements, closing file, opening import, the 2027 publisher commitment).
 - [x] **Review of 20 Oct 2026** (REVIEW-2026-10-20.md in the workspace). Section 1 (bugs) fixed and merged 20 Oct; section 2 (structure) done 21 Oct and released as **0.2.0** in the three repos: CI on every push, version check between the apps, optional features off by default, direct sales next to COD, COD orders invoiced at Livrée and Versements booked, lots in COD shipping, communes and stop desks per courier.
   Done when: the three suites pass locally and on GitHub, and the dev sites are migrated.
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 68 dz_core, 118 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 81 dz_core, 121 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
   (GitHub's CI already does this on every push since 20 Oct: `.github/workflows/ci.yml`.)
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
