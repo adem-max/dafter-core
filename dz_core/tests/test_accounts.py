@@ -178,6 +178,88 @@ class TestScfSetup(IntegrationTestCase):
 			{"311": -400, "60111": 400},
 		)
 
+	def test_a_work_order_posts_consumption_and_production(self):
+		from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+		kinds = SECTORS[self.settings.sector]["group_kinds"]
+		raw_group = next(g for g, kind in kinds.items() if kind == "raw")
+		finished_group = next(g for g, kind in kinds.items() if kind == "finished")
+		raw = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": "SCF-WO-MP",
+				"item_name": "Matière WO",
+				"item_group": raw_group,
+				"stock_uom": "Kg",
+				"is_stock_item": 1,
+				"valuation_rate": 100,
+			}
+		).insert()
+		product = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": "SCF-WO-PF",
+				"item_name": "Produit WO",
+				"item_group": finished_group,
+				"stock_uom": "Nos",
+				"is_stock_item": 1,
+			}
+		).insert()
+		receipt = frappe.get_doc(
+			{
+				"doctype": "Stock Entry",
+				"stock_entry_type": "Material Receipt",
+				"company": self.company,
+				"items": [
+					{
+						"item_code": raw.name,
+						"qty": 10,
+						"basic_rate": 100,
+						"t_warehouse": self.settings.raw_materials_warehouse,
+					}
+				],
+			}
+		).insert()
+		receipt.submit()
+		bom = frappe.get_doc(
+			{
+				"doctype": "BOM",
+				"item": product.name,
+				"company": self.company,
+				"quantity": 1,
+				"items": [{"item_code": raw.name, "qty": 0.5}],
+			}
+		).insert()
+		bom.submit()
+		order = frappe.get_doc(
+			{
+				"doctype": "Work Order",
+				"company": self.company,
+				"production_item": product.name,
+				"bom_no": bom.name,
+				"qty": 4,
+				"source_warehouse": self.settings.raw_materials_warehouse,
+				"wip_warehouse": self.settings.wip_warehouse,
+				"fg_warehouse": self.settings.finished_goods_warehouse,
+			}
+		).insert()
+		order.submit()
+		for purpose in ("Material Transfer for Manufacture", "Manufacture"):
+			entry = frappe.get_doc(make_stock_entry(order.name, purpose, 4))
+			entry.insert()
+			entry.submit()
+		lines = frappe.get_all(
+			"GL Entry",
+			filters={"voucher_no": entry.name, "is_cancelled": 0},
+			fields=["account", "debit", "credit"],
+		)
+		amounts = {}
+		for line in lines:
+			key = number(line.account)
+			amounts[key] = amounts.get(key, 0) + flt(line.debit - line.credit)
+		# materials consumed (601), production stocked (72): the SCF permanent-inventory entries
+		self.assertEqual(amounts, {"311": -200, "60111": 200, "35511": 200, "7245": -200})
+
 	def test_accounting_documents_cannot_be_deleted(self):
 		for doctype in NO_DELETE:
 			with self.subTest(doctype=doctype):

@@ -24,6 +24,7 @@ stock again from the demo workbook. That is how a demo built before
 """
 
 import importlib
+import time
 from contextlib import contextmanager
 
 import frappe
@@ -126,6 +127,34 @@ def remove(doctype, filters):
 			doc.flags.ignore_links = True
 			doc.flags.ignore_permissions = True
 			doc.cancel()
-	for name in names:
+	for count, name in enumerate(names, 1):
 		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+		if count % BATCH == 0:
+			commit_when_workers_keep_up()
+	commit_when_workers_keep_up()
+
+
+# Frappe queues one clean-up job per deleted document when the deletion is
+# committed (delete_dynamic_links), and refuses new jobs past 1,000
+BATCH = 100
+QUEUE_ROOM = 500
+QUEUE_PATIENCE = 600  # seconds without progress before giving up
+
+
+def commit_when_workers_keep_up():
+	"""Commit once the background queue has room for this batch's clean-up
+	jobs. The workers of `bench start` empty it; without them the wipe stops
+	with a clear message instead of Frappe's "Too many queued background jobs"."""
+	from frappe.utils.background_jobs import get_queue
+
+	queue = get_queue("default")
+	waited, last = 0, queue.count
+	while queue.count > QUEUE_ROOM:
+		time.sleep(5)
+		waited = 0 if queue.count < last else waited + 5
+		last = queue.count
+		if waited >= QUEUE_PATIENCE:
+			frappe.throw(
+				f"La file des tâches ne se vide pas ({queue.count} tâches) : lancez les workers (bench start)."
+			)
 	frappe.db.commit()

@@ -14,7 +14,8 @@ Each group is of a kind. The kind gives, as SCF numbers:
 - expense: what a manufacture or a Material Issue debits when the item is
   consumed (60111 materials...), and for finished goods what a manufacture
   credits (7245 "production stockée"): ERPNext then posts the SCF
-  permanent-inventory entries itself (checked on 21 Oct 2026);
+  permanent-inventory entries (production.py puts these accounts on a Work
+  Order's manufacture, which ERPNext gives the stock adjustment account);
 - income: what a sale credits.
 """
 

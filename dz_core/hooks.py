@@ -46,6 +46,8 @@ doc_events = {
 	"Customer": {"validate": "dz_core.phone.normalize_customer_phone"},
 	# a new item group gets its parent's accounts (setup/item_groups.py)
 	"Item Group": {"before_insert": "dz_core.setup.item_groups.inherit_parent_accounts"},
+	# a manufacture posts consumption (60x) and production stocked (72) (production.py)
+	"Stock Entry": {"validate": "dz_core.production.production_accounts"},
 }
 
 # montant() and montant_en_lettres() in print formats (dz_core/utils.py)

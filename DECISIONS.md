@@ -185,12 +185,18 @@ tax office (doc section 9).
   | Offcuts and rejects (Déchets et chutes) | 35831 | 7248 | 7248 | 7031 |
   | Purchased services (Services achetés > Loyer, Internet...) | none | none | 6132, 6264... | none |
 
-- **ERPNext then books production the SCF way by itself** (checked on a
-  throwaway site, 21 Oct 2026): a manufacture posts Dr 60111 / 60261
-  (materials consumed) against Cr 311 / 3261, and Dr 35511 against Cr 7245
-  (production stocked); a sale posts Dr 7245 / Cr 35511 (production
-  destocked). The monthly reclassification entry the advice planned is not
-  needed. Year-end control: class 72 equals the change in classes 33 + 35.
+- **Production is booked the SCF way** (checked 21 Oct 2026): with each
+  line of a manufacture carrying its item group's expense account, ERPNext
+  posts Dr 60111 / 60261 (materials consumed) against Cr 311 / 3261, and
+  Dr 35511 against Cr 7245 (production stocked); a sale posts Dr 7245 /
+  Cr 35511 (production destocked). A manufacture made from a Work Order gets
+  the company's stock adjustment account on every line instead, and the lines
+  cancel out (materials straight into finished goods, nothing in 60x or 72):
+  `production.py` (Stock Entry validate) gives each line its group's account
+  where ERPNext left that default. No monthly reclassification entry is
+  needed. The demos absorb labour through 7245 (the advice: a client who
+  absorbs labour points the operating cost there). Year-end control: class 72
+  equals the change in classes 33 + 35 (report "Clôture du mois").
 - **Company defaults** (`setup/accounts.py` COMPANY_ACCOUNTS): receivable
   4111, payable 40132, bank 5121, cash 5311, received not billed 4081,
   stock adjustment 6572, round-off 65881, round-off for opening 479, write-off
@@ -246,9 +252,8 @@ tax office (doc section 9).
 - **Two actions**: reclassify the 4081 debit balances to 4097 at the month
   end, reversed on the 1st (once per month), and freeze the month (Company
   "Accounts Frozen Till Date").
-- **No production reclassification entry**: with inventory accounts per
-  item group, ERPNext already posts materials consumed (60x) and production
-  stocked (72) at each manufacture.
+- **No production reclassification entry**: each manufacture posts
+  materials consumed (60x) and production stocked (72) itself (`production.py`).
 
 ## Invoices
 
