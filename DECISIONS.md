@@ -124,14 +124,32 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   up to 8 million DA turnover) and charge no TVA, so the 19 % template made
   by the setup wizard is not applied by default for them. This replaced
   dz_cod's own "remove the default 19 % VAT" step.
-- **Régime réel**: the 19 % template stays the default. ERPNext's wizard
-  already makes a 9 % one (reduced rate: basic foodstuffs and listed
-  essentials, extended by the 2026 finance law); one is added only if missing.
-- **Waiting for the accountant, not built:** stamp duty on cash payments
-  (scale from circular 14/MF/DGI/LF.2025; electronic payments are exempt),
-  the G50 helper for régime réel, the turnover report for IFU, and the exact
-  wording of the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable
-  in DZ Core Settings). The default accounts are below.
+- **TVA per rate, on its own ledgers** (21 October 2026, SCF advice Q5).
+  The setup wizard's templates booked collected and deductible TVA in one
+  account ("TVA 19%"), which the SCF does not allow. `setup/tax.py` makes a
+  sales template "TVA ventes" (rows 445711 for 19 %, 445712 for 9 %) and a
+  purchase template "TVA achats" (44566 stocks and services, 44562 fixed
+  assets), all at rate 0: the rate comes from the item's Item Tax Template
+  ("TVA 19 %", "TVA 9 %", "Exonéré", "TVA 19 % immobilisations"), and every
+  item group carries "TVA 19 %". The 2026 codes put all our products at 19 %
+  (honey, jams, date paste, cosmetics, t-shirts, fabric); fresh dates are at
+  9 %, locally grown fresh fruit exempt until 31 Dec 2026 (LF 2024 art. 65,
+  LF 2026 art. 112). Facture DZ prints only the rates the invoice uses.
+  Accounts Settings "Add Taxes from Item Tax Template" is switched off: on,
+  ERPNext adds the item's template accounts as tax rows even on a document
+  with no template, so an IFU invoice got TVA (found by the tests).
+- **Régime réel**: "TVA ventes" and "TVA achats" are the defaults. **IFU**:
+  no default template; an IFU invoice may not show TVA (CTCA art. 64).
+- **Aide G50** (report, `closing.py` `tva_figures`): taxable turnover per
+  rate, TVA collected, TVA deductible, the credit carried from the month
+  before, and the amount to pay on the G50 (44551) or the new credit (44568);
+  a button posts the settlement entry, once per month. A help, not the
+  declaration.
+- **Not built, waiting for the tax office:** stamp duty on cash payments
+  (scale known, circular 14/MF/DGI/LF.2025, but its application to COD is
+  open), the IFU turnover report and registers, and the exact wording of
+  the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable in DZ Core
+  Settings). The default accounts are below.
 
 ## Chart of accounts and default accounts (21 October 2026)
 
@@ -213,6 +231,24 @@ tax office (doc section 9).
   added at the year end, 35519); CMP or FIFO; offcuts at zero value; the
   courier accounts 4671x; the numbers of the owner's accounts (1018, 108);
   110 / 119 and 120 / 129; IFU in 6428 / 4477; the closing file's format.
+
+## Monthly close (21 October 2026)
+
+- **Report "Clôture du mois"** (`closing.py`, `closing_rows`): the checks
+  before a month is frozen, OK or À voir with what to do. 6589 "Charges à
+  reclasser", 4781 "Versements à identifier", 476 and the opening account
+  479 must be empty; suppliers invoiced before their goods arrived (debit
+  balances on 4081) are listed; class 72 must equal the change in classes
+  33 + 35 since the start of the year (the opening count left out). Other
+  apps add checks through the hook `dz_closing_checks` (dz_cod: each
+  courier's 4671n against the parcels it delivered and still owes for, and
+  fees kept without an invoice).
+- **Two actions**: reclassify the 4081 debit balances to 4097 at the month
+  end, reversed on the 1st (once per month), and freeze the month (Company
+  "Accounts Frozen Till Date").
+- **No production reclassification entry**: with inventory accounts per
+  item group, ERPNext already posts materials consumed (60x) and production
+  stocked (72) at each manufacture.
 
 ## Invoices
 

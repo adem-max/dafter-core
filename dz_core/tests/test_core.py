@@ -17,7 +17,13 @@ from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU, REEL
 from dz_core.imports.workbook import import_workbook, make_template
 from dz_core.setup.new_client import prepare
 from dz_core.setup.sectors import CLOTHING, FOOD, SECTORS, create_item_attributes, create_uoms
-from dz_core.setup.tax import REDUCED_RATE, apply_tax_regime, template_with_rate
+from dz_core.setup.tax import (
+	PURCHASE_TEMPLATE,
+	SALES_TEMPLATE,
+	STANDARD,
+	apply_tax_regime,
+	template_with_rate,
+)
 
 COMPANY = "Producteur Test DZ"
 ABBR = "PTD"
@@ -92,12 +98,16 @@ class TestSetup(IntegrationTestCase):
 			frappe.get_all("Sales Taxes and Charges Template", {"company": self.company, "is_default": 1})
 		)
 		apply_tax_regime(self.company, REEL)
-		default = frappe.get_all(
-			"Sales Taxes and Charges Template", {"company": self.company, "is_default": 1}, pluck="name"
-		)
-		self.assertEqual(len(default), 1)
-		self.assertTrue(template_with_rate("Sales Taxes and Charges Template", self.company, REDUCED_RATE))
-		self.assertTrue(template_with_rate("Purchase Taxes and Charges Template", self.company, REDUCED_RATE))
+		abbr = frappe.get_cached_value("Company", self.company, "abbr")
+		for doctype, title in (
+			("Sales Taxes and Charges Template", SALES_TEMPLATE),
+			("Purchase Taxes and Charges Template", PURCHASE_TEMPLATE),
+		):
+			default = frappe.get_all(doctype, {"company": self.company, "is_default": 1}, pluck="name")
+			self.assertEqual(default, [f"{title} - {abbr}"])
+		# every group of the company carries the standard rate
+		taxes = frappe.get_doc("Item Group", "Produits finis").taxes
+		self.assertIn(f"{STANDARD} - {abbr}", [row.item_tax_template for row in taxes])
 		apply_tax_regime(self.company, self.settings.tax_regime)
 
 	def test_default_print_formats(self):

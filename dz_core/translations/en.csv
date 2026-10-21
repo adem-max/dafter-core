@@ -46,3 +46,5 @@ En stock,In stock
 Seuil,Reorder level
 "Le chiffre d'affaires HT des factures validées, mois par mois.","Sales excluding tax of submitted invoices, month by month."
 Aucune matière sous son seuil de réapprovisionnement.,No material under its reorder level.
+Cloture du mois,Month-end close
+Aide G50,G50 helper

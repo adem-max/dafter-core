@@ -48,3 +48,5 @@ En stock,في المخزون
 Seuil,حد إعادة الطلب
 "Le chiffre d'affaires HT des factures validées, mois par mois.",رقم الأعمال دون رسوم للفواتير المعتمدة، شهراً بشهر.
 Aucune matière sous son seuil de réapprovisionnement.,لا توجد مادة تحت حد إعادة الطلب.
+Cloture du mois,إقفال الشهر
+Aide G50,مساعد G50

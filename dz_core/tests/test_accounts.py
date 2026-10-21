@@ -74,6 +74,8 @@ class TestScfSetup(IntegrationTestCase):
 		)
 		self.assertFalse(frappe.db.get_single_value("Accounts Settings", "delete_linked_ledger_entries"))
 		self.assertFalse(frappe.db.get_single_value("Accounts Settings", "book_stock_expense_gl_entries"))
+		# taxes come from the document's template only (every group carries "TVA 19 %")
+		self.assertFalse(frappe.db.get_single_value("Accounts Settings", "add_taxes_from_item_tax_template"))
 
 	def test_item_groups_carry_their_accounts(self):
 		for group, kind in SECTORS[self.settings.sector]["group_kinds"].items():
@@ -218,3 +220,65 @@ class TestScfSetup(IntegrationTestCase):
 		scf_setup.execute()
 		log = apply_scf_setup(self.company)
 		self.assertFalse([line for line in log if line.startswith("created") or "->" in line], log)
+
+
+class TestTvaPerRate(IntegrationTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.settings = ensure_prepared()
+		cls.company = cls.settings.company
+		apply_scf_setup(cls.company)
+
+	def test_an_invoice_books_tva_on_the_line_rate_ledger(self):
+		from erpnext.controllers.accounts_controller import get_taxes_and_charges
+
+		from dz_core.setup.tax import SALES_TEMPLATE
+
+		abbr = frappe.get_cached_value("Company", self.company, "abbr")
+		template = f"{SALES_TEMPLATE} - {abbr}"
+		group = next(
+			g for g, kind in SECTORS[self.settings.sector]["group_kinds"].items() if kind == "finished"
+		)
+		item = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": "TVA-TEST-PF",
+				"item_name": "Produit TVA",
+				"item_group": group,
+				"stock_uom": "Nos",
+				"is_stock_item": 0,
+			}
+		).insert()
+		customer = frappe.get_doc(
+			{"doctype": "Customer", "customer_name": "Client TVA test", "customer_type": "Company"}
+		).insert()
+		invoice = frappe.get_doc(
+			{
+				"doctype": "Sales Invoice",
+				"company": self.company,
+				"customer": customer.name,
+				"taxes_and_charges": template,
+				"taxes": get_taxes_and_charges("Sales Taxes and Charges Template", template),
+				"items": [{"item_code": item.name, "qty": 2, "rate": 1000}],
+			}
+		).insert()
+		amounts = {number(row.account_head): flt(row.tax_amount) for row in invoice.taxes}
+		self.assertEqual(amounts, {"445711": 380, "445712": 0})
+		self.assertEqual(flt(invoice.grand_total), 2380)
+		# the 9 % row, empty, is not printed
+		html = frappe.get_print("Sales Invoice", invoice.name, "Facture DZ", doc=invoice)
+		self.assertIn("TVA 19 %", html)
+		self.assertNotIn("TVA 9 %", html)
+
+		# without a template (IFU), the item's "TVA 19 %" adds nothing
+		ifu = frappe.get_doc(
+			{
+				"doctype": "Sales Invoice",
+				"company": self.company,
+				"customer": customer.name,
+				"items": [{"item_code": item.name, "qty": 2, "rate": 1000}],
+			}
+		).insert()
+		self.assertFalse(ifu.taxes)
+		self.assertEqual(flt(ifu.grand_total), 2000)

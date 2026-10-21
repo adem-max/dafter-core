@@ -205,6 +205,21 @@ accounts and default accounts"):
 "Temporary", else creates "Ouverture temporaire"; the chart step files it as
 479. Used by the opening stock import and the demos.
 
+## setup/tax.py and closing.py (TVA, monthly close, 21 October 2026)
+
+`setup_tva(company)`: the per-rate templates "TVA ventes" (445711 / 445712)
+and "TVA achats" (44566 / 44562) at rate 0, the Item Tax Templates "TVA
+19 %", "TVA 9 %", "Exonéré", "TVA 19 % immobilisations", and "TVA 19 %" on
+every item group of the company. `apply_tax_regime` makes the two templates
+the defaults on the régime réel, none on IFU.
+
+`closing.py`: `balance(company, accounts, until, since)` reads the ledger by
+SCF number; `closing_rows` feeds the report "Cloture du mois" (shown as
+"Clôture du mois"), with the actions `reclassify_srbnb` (4081 → 4097 and its
+reversal) and `freeze_month`; `tva_figures` feeds "Aide G50", and
+`make_tva_settlement` posts the month's TVA settlement. Apps add close
+checks through the hook `dz_closing_checks`.
+
 ## setup/custom_fields.py
 
 **What:** the legal mentions of decree 05-468 and the Customer's phone and
@@ -553,6 +568,7 @@ Phase 1.
 | `test_places_and_phones.py` | phone formats (unit), 69 wilayas and parents, `simplify`, `find_wilaya`, Customer phone normalized |
 | `test_features.py` | catalogue per app, missing key = base only, "all", list followed, the patch for older sites, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
 | `test_reports.py` | Coût de revient follows the last purchase; À acheter; À produire |
+| `test_closing.py` | an amount in 6589 is flagged; an invoice before its goods is reclassified to 4097 once; the month can be frozen; the month's TVA per rate and its settlement, once |
 | `test_accounts.py` | the SCF set-up: chart changes (twice creates nothing), default accounts, settings, accounts on every sector and service group, a new subgroup inherits, the import refuses a group without accounts, a receipt and an issue post to 311 / 60111, no Delete right, supplier groups, earlier picks replaced and choices kept, the patch twice |
 | `test_reports_stock_sales.py` | Valeur du stock equals Stock Balance (total, quantities, at a date); Ventes par mois equals the invoices, evolution, by customer, credit notes |
 | `test_home.py` | home page records loaded, counters equal the lists, a material under its level shows, login opens Atelier |

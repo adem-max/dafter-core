@@ -44,7 +44,6 @@ DEFAULT_PRINT_FORMATS = {"Sales Invoice": "Facture DZ", "Delivery Note": "Bon de
 def prepare(company, abbr, sector, tax_regime=IFU):
 	run_setup_wizard(company, abbr)
 	warehouses = apply_sector(sector, company)
-	apply_tax_regime(company, tax_regime)
 	opening_account(company)
 	set_default_print_formats()
 	allow_printing_cancelled()
@@ -58,6 +57,8 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	settings.save(ignore_permissions=True)
 	# Chart, default accounts, settings, accounts per item group, before any entry
 	apply_scf_setup(company, sector)
+	# after the chart changes: the TVA templates post to 445711 / 445712 / 44566
+	apply_tax_regime(company, tax_regime)
 	frappe.db.commit()
 	print(f"{company} is ready ({sector}, {tax_regime}).")
 	print("Next: legal mentions on the Company form, users, then the import workbook.")

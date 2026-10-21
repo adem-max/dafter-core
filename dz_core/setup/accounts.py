@@ -190,6 +190,9 @@ def set_accounting_settings(company):
 			"enable_immutable_ledger": 1,
 			"delete_linked_ledger_entries": 0,
 			"book_stock_expense_gl_entries": 0,
+			# every item group carries "TVA 19 %" (setup/tax.py): the tax rows must
+			# come from the document's template only, or an IFU invoice gets TVA
+			"add_taxes_from_item_tax_template": 0,
 		},
 	)
 	values = {"book_advance_payments_in_separate_party_account": 1, "default_operating_cost_account": None}

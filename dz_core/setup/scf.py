@@ -2,7 +2,7 @@
 from the SCF advice of 21 October 2026 (DECISIONS.md, "Chart of accounts and
 default accounts"): chart changes, default accounts, accounting settings,
 accounts per item group, supplier groups, payment modes, asset categories,
-and no deletion of accounting documents.
+TVA templates per rate, and no deletion of accounting documents.
 
 Run by prepare() on a new client, by the patch scf_setup on existing sites
 and by the demo loaders. Safe to run again: nothing someone chose is
@@ -18,6 +18,7 @@ from dz_core.setup.item_groups import setup_item_groups
 from dz_core.setup.parties import setup_parties
 from dz_core.setup.permissions import lock_deletions
 from dz_core.setup.sectors import SECTORS
+from dz_core.setup.tax import REEL, set_default_templates, setup_tva
 
 
 def apply_scf_setup(company, sector=None):
@@ -25,10 +26,15 @@ def apply_scf_setup(company, sector=None):
 	log = apply_chart_changes(company)
 	log += set_accounting_settings(company)  # before the defaults: warehouse accounts depend on it
 	log += [f"{field}: {old or '-'} -> {new}" for field, (old, new) in set_default_accounts(company).items()]
-	if not sector:
-		settings = frappe.get_single("DZ Core Settings")
-		sector = settings.sector if settings.company == company else None
+	settings = frappe.get_single("DZ Core Settings")
+	ours = settings.company == company
+	if not sector and ours:
+		sector = settings.sector
 	setup_item_groups(company, SECTORS[sector]["group_kinds"] if sector in SECTORS else {})
 	setup_parties(company)
+	# TVA per rate (setup/tax.py); on the régime réel its templates are the defaults
+	setup_tva(company)
+	if ours and settings.tax_regime == REEL:
+		set_default_templates(company)
 	log += [f"no {right} on {doctype} for {role}" for doctype, role, right in lock_deletions()]
 	return log
