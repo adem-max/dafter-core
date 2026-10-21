@@ -289,6 +289,11 @@ bench --site restore-test.localhost restore "$B-database.sql.gz" \
 KEY=$(python3 -c "import json;print(json.load(open('$B-site_config_backup.json')).get('encryption_key',''))")
 [ -n "$KEY" ] && bench --site restore-test.localhost set-config encryption_key "$KEY"
 
+# And the client's optional features (key dz_features): a site without the
+# key has the base only, so a restore that forgets it switches their options off
+FEATURES=$(python3 -c "import json;print(repr(json.load(open('$B-site_config_backup.json')).get('dz_features')))")
+[ "$FEATURES" != "None" ] && bench --site restore-test.localhost set-config --parse dz_features "$FEATURES"
+
 bench --site restore-test.localhost migrate                 # brings the restored data to the installed app versions
 ```
 
@@ -297,9 +302,10 @@ backups made *encrypted* with `backup_encryption_key`, which this guide does
 not use. Do not confuse it with the site's `encryption_key`.)
 
 Check in the test site: number of invoices (or orders), the last date, a PDF with an
-image, a courier's API token. When satisfied, either drop the test site
+image, a courier's API token, the options (`bench --site restore-test.localhost dz-features --list`).
+When satisfied, either drop the test site
 (`bench drop-site restore-test.localhost --force`) or, for a real disaster,
-run the same `restore` (and `set-config encryption_key`) on the live site name.
+run the same `restore` (and both `set-config`) on the live site name.
 
 **Do a test restore every month** — a backup you never restored is only a hope.
 
@@ -326,6 +332,19 @@ sudo supervisorctl restart all                                   # restart web a
 ```
 
 When both changed, pull dz_core first: dz_cod runs on top of it.
+
+**Our three apps are released together, with one version number** (0.2.0 on
+21 Oct 2026, git tag `v0.2.0` in each repo): put dz_core, dz_cod and, on the
+hub server, dz_hub on the same version, dz_core first, then migrate. dz_cod
+and dz_hub refuse to load on an older dz_core (`DZ_CORE_MIN` in their
+`__init__.py`) with "update apps/dz_core, then bench migrate", instead of
+failing somewhere in the code.
+
+```bash
+cd ~/frappe-bench/apps/dz_core && git fetch --tags && git checkout v0.2.0
+cd ~/frappe-bench/apps/dz_cod && git fetch --tags && git checkout v0.2.0
+cd ~/frappe-bench && bench --site all migrate && bench build && sudo supervisorctl restart all
+```
 
 If something breaks after an update: `bench --site <site> migrate` again and
 read the error; worst case, restore last night's backup (section 10).

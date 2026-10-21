@@ -41,7 +41,9 @@ frappe.query_reports["Ventes par mois"] = {
 			fieldtype: "Check",
 			default: 0,
 			depends_on: "eval:doc.by == 'Produit'",
-			description: __("Sinon, les variantes (taille, couleur) sont additionnées sous leur modèle"),
+			description: __(
+				"Sinon, les variantes (taille, couleur) sont additionnées sous leur modèle"
+			),
 		},
 	],
 	formatter(value, row, column, data, default_formatter) {

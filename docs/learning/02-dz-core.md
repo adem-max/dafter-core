@@ -4,7 +4,7 @@ The base every client gets (Pack Atelier): one-command setup, sector
 templates, the tax regime, legal invoices, the Excel import workbook, the
 69 wilayas, phone numbers, producer reports, the Atelier home page, the
 optional-feature switches, backups and the two producer demos.
-`required_apps = ["erpnext"]`. 59 tests (13 unit + 46 integration).
+`required_apps = ["erpnext"]`. 68 tests (13 unit + 55 integration).
 
 ```
 dafter-core/
@@ -91,6 +91,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
 	...
+	set_default_accounts(company)              # accounts.py: SCF defaults instead of the wizard's picks
 ```
 
 Step by step, the part to be able to tell without opening the file:
@@ -192,6 +193,17 @@ duty on cash, G50 helper, IFU turnover report.
 else creates "Ouverture temporaire" under the liability root. Used by the
 opening stock import and the demos.
 
+`set_default_accounts(company)`: the setup wizard fills the Company's
+default accounts with the last account of each type in the Algerian chart
+(receivables in 4172, the bank in 5176, stock in 3451...). This puts the SCF
+accounts there by number (`COMPANY_ACCOUNTS`: 4111, 40132, 5121, 5311, 4081,
+35511, 6031, 7011, 7245, 6588, 6812, 2328), only where the wizard's pick or
+nothing is, so a choice someone made is kept. It adds 35511 "Produits finis"
+(the chart has no ledger for finished goods), gives the three warehouses
+311 / 3311 / 35511, and moves the modes of payment that pointed to the old
+cash or bank account. Patch `scf_default_accounts` did the same on existing
+sites. DECISIONS.md "Default accounts" lists what the accountant must confirm.
+
 ## setup/custom_fields.py
 
 **What:** the legal mentions of decree 05-468 and the Customer's phone and
@@ -289,9 +301,11 @@ vendor can change it.
 ```python
 def enabled():
 	known = catalog()                 # merge of every installed app's dz_features dicts
-	value = configured()              # the list in site_config, or None
+	value = configured()              # the list in site_config, "all", or None
 	if value is None:
-		return set(known)             # key missing = everything on (demo, test, old sites)
+		return set()                  # key missing = the base only
+	if value == ALL:
+		return set(known)             # "all": demo and test sites
 	return {name for name in value if name in known}
 
 def requires_feature(feature):        # decorator, put UNDER @frappe.whitelist()
@@ -314,8 +328,11 @@ def apply_features():                 # after every migrate: migrate re-enables 
   does not install the client apps, and `frappe.get_hooks(app_name=...)` and
   `frappe.get_attr` refuse them there.
 - `boot(bootinfo)` → `frappe.boot.dz_features` in the browser.
-- `set_features(list | None)` writes site_config and applies; `None` removes
-  the key (everything on). `move_legacy_key()` moves the old `dz_cod_features`.
+- `set_features(list | ALL)` writes site_config and applies. `move_legacy_key()`
+  moves the old `dz_cod_features`.
+- `patches/keep_all_features_on_existing_sites.py`: until 20 October 2026 a
+  missing key meant everything; sites made before got "all" on migrate. New
+  sites skip it (Frappe marks an app's patches done on install).
 
 `commands.py` adds the bench command (Frappe reads `commands = [...]`):
 
@@ -527,14 +544,15 @@ Phase 1.
 
 ## tests/
 
-`bench --site test.localhost run-tests --app dz_core` (59 tests).
+`bench --site test.localhost run-tests --app dz_core` (68 tests).
 
 | File | Checks |
 | --- | --- |
 | `test_core.py` | `prepare()` guard and idempotence, sector template, warehouses per group, tax regimes, default print formats, cancelled invoices printable, address template, wizard groups removed, legal fields, the workbook (errors create nothing, full import then re-import, older templates), invoice rendering, amounts in French words |
 | `test_places_and_phones.py` | phone formats (unit), 69 wilayas and parents, `simplify`, `find_wilaya`, Customer phone normalized |
-| `test_features.py` | catalogue per app, missing key = everything, list followed, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
+| `test_features.py` | catalogue per app, missing key = base only, "all", list followed, the patch for older sites, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
 | `test_reports.py` | Coût de revient follows the last purchase; À acheter; À produire |
+| `test_accounts.py` | the SCF default accounts after `prepare()`, warehouses' stock accounts; the wizard's picks are replaced and a choice is kept; the patch twice |
 | `test_reports_stock_sales.py` | Valeur du stock equals Stock Balance (total, quantities, at a date); Ventes par mois equals the invoices, evolution, by customer, credit notes |
 | `test_home.py` | home page records loaded, counters equal the lists, a material under its level shows, login opens Atelier |
 | `test_restore_check.py` | counts, hooks from apps on top, a password from another key is reported |

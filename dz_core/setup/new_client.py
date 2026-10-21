@@ -9,8 +9,9 @@ Run once, right after `bench new-site` and `bench --site <site> install-app dz_c
 It runs the setup wizard (French, Algeria, DZD, Algerian chart of accounts),
 applies the sector template (item groups, units, attributes, the three
 warehouses and which group goes where), applies the tax regime, adds the
-opening-balance account and fills DZ Core Settings. Safe to run twice:
-whatever already exists is skipped.
+opening-balance account, fills DZ Core Settings and puts the SCF accounts in
+the company's defaults (setup/accounts.py). Safe to run twice: whatever
+already exists is skipped.
 
 It also makes "Facture DZ" and "Bon de livraison DZ" the default print formats
 (unless the client already chose others), and the Atelier home page the page
@@ -29,7 +30,7 @@ from frappe.custom.doctype.property_setter.property_setter import make_property_
 from frappe.utils import today
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU
-from dz_core.setup.accounts import opening_account
+from dz_core.setup.accounts import opening_account, set_default_accounts
 from dz_core.setup.sectors import apply_sector
 from dz_core.setup.tax import IFU_NOTE, apply_tax_regime
 
@@ -54,6 +55,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	if tax_regime == IFU and not settings.invoice_note:
 		settings.invoice_note = IFU_NOTE
 	settings.save(ignore_permissions=True)
+	set_default_accounts(company)  # after the settings: it gives their warehouses an account
 	frappe.db.commit()
 	print(f"{company} is ready ({sector}, {tax_regime}).")
 	print("Next: legal mentions on the Company form, users, then the import workbook.")

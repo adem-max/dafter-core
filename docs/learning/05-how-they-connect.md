@@ -49,7 +49,8 @@ Who owns what: dz_core owns the mechanism (`features.py`, the command, the
 boot data); dz_cod owns its four features (`FEATURES`) and their guards;
 the hub owns who pays for which, and reads the catalogue with
 `bench_catalog()` (plain imports, because the apps are not installed on the
-hub site). Key missing in site_config = everything on (demo and test sites).
+hub site). Key missing in site_config = the base only; `"all"` = everything
+(demo and test sites).
 
 ## 3. Login and the home page
 

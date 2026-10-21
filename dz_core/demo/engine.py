@@ -6,7 +6,10 @@ only adds the days since. Events after today are never posted: the story
 stops today, with orders still to deliver and work orders in progress.
 
 Documents are backdated (posting_date + set_posting_time) and posted strictly
-in date order, the way ERPNext expects stock to move.
+in date order, the way ERPNext expects stock to move. On a past day they are
+posted at noon, not at the clock time of the load: the opening stock (posted
+at the start of its day, or at the time an older demo was built) comes first
+whatever the hour of a reload.
 """
 
 import frappe
@@ -16,6 +19,7 @@ from dz_core.demo.planner import FINISHED_WAREHOUSE, RAW_WAREHOUSE
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import get_settings
 
 PREFIX = "dz_demo"
+STORY_TIME = "12:00:00"  # the time of the story's documents on past days (dated)
 
 # dz_core's payment modes (Sales Invoice field dz_payment_mode) -> ERPNext Mode of Payment
 MODES = {
@@ -80,6 +84,9 @@ class Engine:
 		doc.set(field, getdate(date))
 		if doc.meta.has_field("set_posting_time"):
 			doc.set_posting_time = 1
+			# Today keeps the clock time: ERPNext refuses stock posted in the future
+			if getdate(date) < self.today:
+				doc.posting_time = STORY_TIME
 		return doc
 
 	def save(self, doc):

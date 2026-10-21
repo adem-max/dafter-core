@@ -27,8 +27,11 @@ Legend: [x] done, [ ] to do, (A) needs the accountant first.
 
 Goal: you can set up a client and show it, without help.
 
+- [x] **Review of 20 Oct 2026** (REVIEW-2026-10-20.md in the workspace). Section 1 (bugs) fixed and merged 20 Oct; section 2 (structure) done 21 Oct and released as **0.2.0** in the three repos: CI on every push, version check between the apps, optional features off by default, direct sales next to COD, COD orders invoiced at Livrée and Versements booked, lots in COD shipping, communes and stop desks per courier.
+  Done when: the three suites pass locally and on GitHub, and the dev sites are migrated.
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 63 dz_core, 98 dz_cod and 19 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 68 dz_core, 118 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
+  (GitHub's CI already does this on every push since 20 Oct: `.github/workflows/ci.yml`.)
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
 - [x] **Default print formats.** Make "Facture DZ" and "Bon de livraison DZ" the defaults during `prepare()` (done 19 Oct, with the demos).

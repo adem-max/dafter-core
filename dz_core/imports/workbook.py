@@ -785,6 +785,8 @@ def create_opening_stock(rows, settings, report, opening_date=None):
 				"expense_account": account,
 				"posting_date": getdate(opening_date) if opening_date else getdate(),
 				"set_posting_time": 1 if opening_date else 0,
+				# the count opens its day: what moves that day comes after it
+				**({"posting_time": "00:00:00"} if opening_date else {}),
 				"items": [
 					{
 						"item_code": row["item_code"],

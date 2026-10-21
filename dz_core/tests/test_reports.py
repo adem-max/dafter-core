@@ -113,7 +113,7 @@ class TestProducerReports(IntegrationTestCase):
 				"company": self.company,
 				"customer": self.customer,
 				"delivery_date": add_days(nowdate(), 3),
-				**cod_details(),
+				**direct_sale(),
 				"items": [
 					{
 						"item_code": self.jam,
@@ -175,18 +175,13 @@ def make(doctype, **values):
 	return frappe.get_doc({"doctype": doctype, **values}).insert().name
 
 
-def cod_details():
-	"""On a test site that also has dz_cod, every sales order needs its delivery
-	details to be confirmed."""
+def direct_sale():
+	"""On a test site that also has dz_cod, this producer's order is a direct
+	sale (dz_cod's sales channel): ERPNext's usual flow, without the COD checks
+	or COD Settings."""
 	if "dz_cod" not in frappe.get_installed_apps():
 		return {}
-	return {
-		"dz_phone": "0555123456",
-		"dz_wilaya": frappe.db.get_value("DZ Wilaya", {}),
-		"dz_delivery_type": "Domicile",
-		"dz_commune": "Boufarik",
-		"dz_address": "1 rue principale",
-	}
+	return {"dz_channel": "Vente directe"}
 
 
 def leaf(doctype):

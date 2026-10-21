@@ -5,7 +5,7 @@ cash-on-delivery order desk for Algerian sellers (Instagram, Facebook,
 website). Phone confirmation, stock reservation, shipping fees by wilaya,
 courier hand-over, returns, courier cash settlement ("Versement"), webhooks
 to n8n, three reports, a demo shop. `required_apps = ["erpnext", "dz_core"]`.
-98 tests (21 unit + 77 integration).
+118 tests (24 unit + 94 integration).
 
 **The deep course on this app already exists:** dafter-cod
 `docs/STUDY_GUIDE.md` (mental model, the lines that matter, "break it on
@@ -72,6 +72,12 @@ Nouvelle ──Confirmer──> Confirmée ──Préparer──> Préparée ─
 How ERPNext sees it: Nouvelle / Injoignable / Annulée are **drafts**
 (docstatus 0); **Confirmer = submit** (ERPNext reserves the stock); later
 moves are "update after submit"; Annulée après confirmation = **cancel**.
+
+A **direct sale** (field *Canal* = Vente directe, `cod/channel.py`: the
+customer's usual channel, else COD Settings') takes a short path in the same
+workflow, Nouvelle ──Valider──> Validée, then ERPNext's own delivery note and
+invoice. Every hook in `cod/order.py` returns at once for it (`is_cod`), and
+the transition conditions show the COD buttons on COD orders only.
 
 ### cod/states.py
 
@@ -206,6 +212,18 @@ over several Versements.
 - `load_delivered_orders` (*Charger les commandes livrées*) pre-fills one line
   per delivered order; `get_missing_orders` lists delivered orders not in the statement.
 
+### cod/invoicing.py (COD accounting)
+
+- `invoice_delivered_order`: when an order becomes Livrée (`on_update_after_submit`),
+  its Sales Invoice is made from the delivery note (`make_sales_invoice`), dated the
+  delivery, payment mode "Contre-remboursement", submitted and linked on the order
+  (`dz_sales_invoice`). dz_core's sales reports then count online sales.
+- `settlement_entry`: on a Versement's submit, one Journal Entry. Debit the bank and the
+  courier fees; credit each order's invoice with what the courier collected; an accepted
+  short payment is written off ("Écarts sur versements"); unknown parcels wait in
+  "Versements à identifier". Cancelling the Versement cancels the entry.
+- The accounts are COD Settings fields (section Comptabilité), made by `prepare` and on migrate.
+
 ### cod/phone_checks.py
 
 Warnings, never blocks (optional feature `phone_checks`): an order whose
@@ -258,7 +276,7 @@ API keys and webhook secret are custom fields on the Supplier.
 | `yalidine.py` | Yalidine API (`api.yalidine.app/v1/`, headers `X-API-ID` / `X-API-TOKEN`): create parcel (reuses one already created for the order), statuses 50 per call, history; `map_status` turns Yalidine's words into ours (only "Livré" and "Retourné au vendeur" move an order). `call()` remembers exhausted quota windows and `Retry-After` in Redis, shared by web and workers: a click gets a clear message, a job waits up to 60 s. **Built from a copy of the docs, tested with a fake HTTP layer only: check with a real account first** (COURIER_INTEGRATION.md §4) |
 | `yalidine_import.py` | Buttons on the courier: import Yalidine prices into the wilayas' *courier* costs (one call per wilaya, 1.5 s apart), import communes and stop desks; background jobs, `@requires_feature("courier_api")` |
 | `yalidine_webhook.py` | `receive()` at `/api/method/dz_cod.couriers.yalidine_webhook.receive`: answers the CRC check (GET), checks `X-YALIDINE-SIGNATURE` = HMAC-SHA256(raw body, secret) against each Yalidine courier, stores each event as a **Courier Webhook Event** named by its `event_id` (a duplicate is refused by the database), answers 200 at once and applies the events in a job |
-| `places.py` | Pick lists on the order: communes and stop desks of a wilaya (or of its parent for 59–69) |
+| `places.py` | Pick lists on the order: the order's courier's communes and stop desks of a wilaya (or of its parent for 59–69); none for a courier without a list (Manuel) |
 | `sync.py` | Hourly job (if *Synchroniser les statuts* is on and `courier_api`): asks each courier about its shipped parcels at once and presses the normal workflow buttons, so stock moves and webhooks run as if a person clicked; one failure never stops the others |
 | `zrexpress.py` | "Coming soon": works like Manuel until ZR's new platform has docs |
 
@@ -313,7 +331,7 @@ In the Jinja payload write `doc["items"]`, not `doc.items` (that is the dict met
 | --- | --- |
 | **COD Settings** ("Paramètres COD", single) | company, main and returns warehouse, shipping income account, block confirmation without stock, max call attempts, refused-parcel warning threshold, settlement tolerance, default courier, automatic status sync |
 | **Courier Settlement** + **Courier Settlement Item** ("Versement") | above |
-| **DZ Commune**, **DZ Stop Desk** | Yalidine's communes and offices, named by Yalidine's ids so a new import updates |
+| **DZ Commune**, **DZ Stop Desk** | Each courier's communes and offices, one list per connector, named `<connector>-<courier's id>` (`Yalidine-1630`) so a new import updates; the order's pick lists show its courier's list |
 | **Courier Webhook Event** | one per pushed event, named by `event_id`; cleared after 30 days |
 
 DZ Wilaya is dz_core's; this app only adds fields to it.
@@ -363,6 +381,12 @@ courier (rolled back per class).
 | `test_checks_and_label.py` | refused-parcel and duplicate warnings, return-rate small samples, webhook template refresh (kept when edited), Code 128 checksum, the label |
 | `test_couriers_and_webhooks.py` | Mock statuses move orders, Manuel, ZR "coming soon", webhook fires once per state change, payload is valid JSON, reports run |
 | `test_yalidine.py` (unit, fake HTTP) | parcels, statuses, quotas, imports, signed webhooks |
+| `test_places.py` | two couriers' communes and offices don't mix; the patch that renamed the Yalidine-only records |
+| `test_channel.py` | a direct sale skips the COD checks and fee and goes Nouvelle → Validée, then ERPNext's delivery note and invoice; the customer's channel; the COD counters ignore direct sales; the channel patch |
+| `test_invoicing.py` | Livrée makes one submitted invoice (taxes, delivery fee, Contre-remboursement); a Versement's Journal Entry (paid, accepted gap, open gap, unknown, overpaid lines) balances; cancelling reverses it |
+| `test_lots.py` | a COD line that needs two lots ships, comes back and is inspected |
+| `test_new_client.py` | the online seller's `prepare()` on a fresh company, twice |
+| `test_version.py` (unit) | refused on a dz_core older than `DZ_CORE_MIN` |
 | `test_features.py` | each feature off hides and refuses its part |
 | `test_home.py` | COD home page records |
 | `test_translations.py` (unit) | every French text has an English line (`i18n_strings.py`) |
@@ -374,7 +398,6 @@ courier (rolled back per class).
 
 ## What is not built (LATER.md)
 
-Accounting of COD sales (no Sales Invoice: delivered orders stay "To Bill"),
 Yalidine checked on a real account and its payments into Versements, ZR
 Express, an order intake endpoint for n8n, a commune master list, rates per
 courier, exchanges, hard stock reservation, SMS.

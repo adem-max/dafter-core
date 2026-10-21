@@ -107,6 +107,12 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Each app declares its own features with a `dz_features` hook pointing at
   a dict; dz_core has none of its own yet. The old key `dz_cod_features` is
   still read and moved on migrate; `dz-cod-features` stays as an alias.
+- **No feature list means the base only** (20 October 2026): it meant
+  "everything", so a client site made by hand, or restored on a new server
+  without its site_config, had every paid option. Demo and test sites say
+  `"all"`; a patch wrote it on the sites made before, and new sites skip it
+  (Frappe marks an app's patches done on install). A restore copies the list
+  from the backup's site_config (docs/DEPLOY.md, section 10).
 - **The catalogue is read with plain imports for the hub**
   (`bench_catalog`): the hub site does not install the client apps, and
   `frappe.get_hooks(app_name=...)` and `frappe.get_attr` both refuse an app
@@ -125,9 +131,63 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   (scale from circular 14/MF/DGI/LF.2025; electronic payments are exempt),
   the G50 helper for régime réel, the turnover report for IFU, and the exact
   wording of the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable
-  in DZ Core Settings), and the stock accounts ERPNext maps by default for the
-  Algerian chart (a fresh site points "Default Inventory Account" at a class 3
-  services account).
+  in DZ Core Settings). The default accounts are below.
+
+## Default accounts (21 October 2026)
+
+- **ERPNext's setup wizard picks the wrong default accounts for the Algerian
+  chart.** It takes the last account of each type, so every client site (and
+  every demo) booked receivables in 4172 "Créances sur prestations en
+  cours", suppliers in 4213 "Soldes de tout compte restant dus" (a salary
+  account), the bank in 5176 "Société de bourse", the till in 5322 "Caisse
+  auxiliaire B" and stock in 3451 "Prestations de services". Found in the
+  end-to-end check of the 20 Oct review.
+- **`prepare()` now puts the SCF accounts there, by account number**
+  (`setup/accounts.py`, `set_default_accounts`). Only a default that is still
+  the wizard's pick, or empty, is replaced: a choice someone made is kept.
+  The patch `scf_default_accounts` did the same on the existing sites;
+  documents already posted keep their accounts (no client site was live; the
+  demos were reloaded). dz_cod's Versements bank follows (its patch
+  `settlement_bank_follows_company`).
+
+  | Default | Wizard's pick | Now |
+  | --- | --- | --- |
+  | Receivable | 4172 | 4111 Clients : ventes de biens et services |
+  | Payable | 4213 | 40132 Fournisseurs de stocks : nationaux privés |
+  | Bank / Cash | 5176 / 5322 | 5121 Comptes bancaires : dinars / 5311 Caisse principale |
+  | Stock received not billed | 4088 (or none) | 4081 Fournisseurs de stocks : factures non parvenues |
+  | Stock (company default) | 3451 | 35511 Produits finis, added under the group 3551 (the chart has no ledger for finished goods) |
+  | Warehouses | none | Matières premières 311, Travaux en cours 3311 (Produits en cours), Produits finis 35511 |
+  | Stock adjustment | 6032 | 6031 Variation des stocks de matières premières et fournitures |
+  | Income | 7001 Marchandises | 7011 Ventes de produits finis |
+  | Cost of goods sold | 6078 (a non-stock supplies account) | 7245 Variation de stocks de produits finis |
+  | Round-off | 766 Gains de change | 6588 Autres charges diverses de gestion courante |
+  | Depreciation / assets in progress | 6862 / 237 | 6812 / 2328 |
+
+  The modes of payment that pointed to the wizard's cash or bank account follow.
+- **To confirm with the accountant before the first client:**
+  1. **Cost of products sold in 7245** (SCF "déstockage"). ERPNext moves the
+     materials' cost into the finished goods' stock value when a batch is
+     made and never credits 72 at production, so 72 shows only the cost of
+     what was sold, and 601 "Matières consommées" stays empty. Is that
+     acceptable, or should the cost go to 601/600 and be reclassified at the
+     year end?
+  2. **One account for everything not on an item**: the company's cost
+     account (7245) is also what a purchase of a non-stock item falls back
+     to. Services, electricity, rent need their own expense account (61/62)
+     on the item, or they land in 7245.
+  3. **35511 "Produits finis"**, the account we added under 3551: number and name.
+  4. **Suppliers**: one default, 40132 (stocks, national, private). Service
+     suppliers (40162), foreign ones (40133) and public ones: per supplier
+     group?
+  5. **Stock count gaps**: ERPNext uses one account for both signs; 6031
+     (variation des stocks) or 6571/6572 "Écart de stocks"?
+  6. **Round-off** in 6588 (both signs), or 658/758.
+  7. **Online sellers who resell** instead of making: 700 / 30 / 600
+     (marchandises) instead of 701 / 355 / 7245.
+  8. **Bank**: one account, 5121. A client paid by CCP / BaridiMob: 5171?
+  9. **Fixed assets**: 6812 depreciation, 2328 in progress, 2818 accumulated
+     (ERPNext's pick, kept); per asset category when a client has assets.
 
 ## Invoices
 
@@ -140,6 +200,8 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Total HT (what the lines add up to), Remise, Total HT après remise, then
   each tax after the discount, then TTC. It used to print the discounted HT
   and subtract the discount again under the taxes.
+- **"Contre-remboursement" is a payment mode** (20 October 2026): dz_cod
+  invoices an online order when it is delivered, paid to the courier.
 - **A credit note prints as "FACTURE D'AVOIR"** with its original invoice,
   amounts and words positive ("Arrêté le présent avoir à la somme de…"):
   ERPNext stores it with negative amounts, which printed as a "FACTURE" of
@@ -164,7 +226,9 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   a client counts on the 1st and sends the file on the 5th, and the demos
   start 13 weeks back. The batches of that count are made on that date too:
   ERPNext takes the oldest batch first, and an opening batch stamped with the
-  import day looked newer than everything produced after it.
+  import day looked newer than everything produced after it. A dated count is
+  posted at 00:00 on its day (21 October 2026): posted at the clock time of
+  the import, it came after anything entered earlier in that day's hours.
 - **Clients carry NIS and tax article (AI) too** (19 October 2026): the
   buyer's mentions on a business invoice are RC, NIF, NIS and AI; the sheet
   had only the first two. A column added later is optional in the file: a
@@ -237,10 +301,11 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Accounts Manager), and the "À acheter" counter is keyed on Material Request
   (buyers, stock, production): otherwise the sales login got an error popup
   and a counter stuck on loading.
-- **On a site with dz_cod, every sales order goes through the COD checks**
-  (phone, wilaya, address), wholesale ones included: dz_cod has no "not a
-  COD order" path yet. To decide before a producer who also sells online
-  goes live (dafter-cod).
+- **On a site with dz_cod, an order is COD or a direct sale** (20 October
+  2026, dz_cod's sales channel): wholesale and shop orders are direct sales,
+  skip the COD checks (phone, wilaya, address) and follow ERPNext's usual
+  delivery note and invoice, so a producer who also sells online keeps
+  this app's flows. Until then every order went through the COD checks.
 
 ## Demos (19 October 2026)
 
@@ -284,6 +349,11 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **Same story every time**: a day's randomness depends on the seed and that
   day only, and the first day is stored on the site, so loading again later
   replays the same past and adds the days since.
+- **Past days' documents are posted at noon** (21 October 2026), not at the
+  clock time of the load. The clothing demo, built at 11:33, failed to reload
+  at 10:00: its first day's work order fell before the opening stock posted
+  that day at 11:33. Today's documents keep the clock time (ERPNext refuses
+  stock posted in the future).
 - **Working days are Sunday to Thursday.**
 - **Outgoing batch lines are split by the engine**, oldest batch first,
   expired ones skipped: ERPNext 16 puts one batch on a line by itself and
