@@ -133,61 +133,86 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   wording of the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable
   in DZ Core Settings). The default accounts are below.
 
-## Default accounts (21 October 2026)
+## Chart of accounts and default accounts (21 October 2026)
+
+Source: the advice doc "Daftar: SCF default accounts and compliance advice
+(ERPNext v16)" (claude.ai artifact FKLsv1yiQhp6H3F7MYirFm), written from
+the SCF texts, the 2026 tax codes and a practitioner review. Applied by
+`setup/scf.py` (prepare() on a new client, patch `scf_setup` on older sites,
+the demo loaders). Its open questions stay for the expert-comptable and the
+tax office (doc section 9).
 
 - **ERPNext's setup wizard picks the wrong default accounts for the Algerian
-  chart.** It takes the last account of each type, so every client site (and
-  every demo) booked receivables in 4172 "Créances sur prestations en
-  cours", suppliers in 4213 "Soldes de tout compte restant dus" (a salary
-  account), the bank in 5176 "Société de bourse", the till in 5322 "Caisse
-  auxiliaire B" and stock in 3451 "Prestations de services". Found in the
-  end-to-end check of the 20 Oct review.
-- **`prepare()` now puts the SCF accounts there, by account number**
-  (`setup/accounts.py`, `set_default_accounts`). Only a default that is still
-  the wizard's pick, or empty, is replaced: a choice someone made is kept.
-  The patch `scf_default_accounts` did the same on the existing sites;
-  documents already posted keep their accounts (no client site was live; the
-  demos were reloaded). dz_cod's Versements bank follows (its patch
-  `settlement_bank_follows_company`).
+  chart.** It takes the last account of each type: receivables in 4172,
+  suppliers in 4213 (a salary account), the bank in 5176 "Société de bourse",
+  stock in 3451 "Prestations de services". Daftar 0.2.0 replaced them;
+  0.3.0 applies the advice in full.
+- **Inventory accounts per item group, not per warehouse** (Company "Enable
+  Item-wise Inventory Account"). A small workshop keeps fabric, trims and
+  packaging in one room, and finished goods and resold goods at the same
+  courier: per warehouse, one room means one account. ERPNext allows the
+  switch only before the company's first stock entry, and then refuses an
+  item whose group has no stock account (no company fallback, no
+  inheritance from the parent group). So every group carries its accounts
+  (`setup/item_groups.py`), a new group copies its parent's, and the import
+  workbook refuses a group without accounts.
 
-  | Default | Wizard's pick | Now |
-  | --- | --- | --- |
-  | Receivable | 4172 | 4111 Clients : ventes de biens et services |
-  | Payable | 4213 | 40132 Fournisseurs de stocks : nationaux privés |
-  | Bank / Cash | 5176 / 5322 | 5121 Comptes bancaires : dinars / 5311 Caisse principale |
-  | Stock received not billed | 4088 (or none) | 4081 Fournisseurs de stocks : factures non parvenues |
-  | Stock (company default) | 3451 | 35511 Produits finis, added under the group 3551 (the chart has no ledger for finished goods) |
-  | Warehouses | none | Matières premières 311, Travaux en cours 3311 (Produits en cours), Produits finis 35511 |
-  | Stock adjustment | 6032 | 6031 Variation des stocks de matières premières et fournitures |
-  | Income | 7001 Marchandises | 7011 Ventes de produits finis |
-  | Cost of goods sold | 6078 (a non-stock supplies account) | 7245 Variation de stocks de produits finis |
-  | Round-off | 766 Gains de change | 6588 Autres charges diverses de gestion courante |
-  | Depreciation / assets in progress | 6862 / 237 | 6812 / 2328 |
+  | Kind of group | Stock | Cost of sales | Consumption / issue | Income |
+  | --- | --- | --- | --- | --- |
+  | Raw materials (Matières premières, Tissus) | 311 | 60111 | 60111 | 7081 |
+  | Trims (Fournitures) | 317 | 60171 | 60171 | 7082 |
+  | Packaging (Emballages) | 3261 | 60261 | 60261 | 7082 |
+  | Own products (Produits finis) | 35511 | 7245 | 7245 | 7011 |
+  | Resold goods (Marchandises) | 301 | 6001 | 6571 | 7001 |
+  | Offcuts and rejects (Déchets et chutes) | 35831 | 7248 | 7248 | 7031 |
+  | Purchased services (Services achetés > Loyer, Internet...) | none | none | 6132, 6264... | none |
 
-  The modes of payment that pointed to the wizard's cash or bank account follow.
-- **To confirm with the accountant before the first client:**
-  1. **Cost of products sold in 7245** (SCF "déstockage"). ERPNext moves the
-     materials' cost into the finished goods' stock value when a batch is
-     made and never credits 72 at production, so 72 shows only the cost of
-     what was sold, and 601 "Matières consommées" stays empty. Is that
-     acceptable, or should the cost go to 601/600 and be reclassified at the
-     year end?
-  2. **One account for everything not on an item**: the company's cost
-     account (7245) is also what a purchase of a non-stock item falls back
-     to. Services, electricity, rent need their own expense account (61/62)
-     on the item, or they land in 7245.
-  3. **35511 "Produits finis"**, the account we added under 3551: number and name.
-  4. **Suppliers**: one default, 40132 (stocks, national, private). Service
-     suppliers (40162), foreign ones (40133) and public ones: per supplier
-     group?
-  5. **Stock count gaps**: ERPNext uses one account for both signs; 6031
-     (variation des stocks) or 6571/6572 "Écart de stocks"?
-  6. **Round-off** in 6588 (both signs), or 658/758.
-  7. **Online sellers who resell** instead of making: 700 / 30 / 600
-     (marchandises) instead of 701 / 355 / 7245.
-  8. **Bank**: one account, 5121. A client paid by CCP / BaridiMob: 5171?
-  9. **Fixed assets**: 6812 depreciation, 2328 in progress, 2818 accumulated
-     (ERPNext's pick, kept); per asset category when a client has assets.
+- **ERPNext then books production the SCF way by itself** (checked on a
+  throwaway site, 21 Oct 2026): a manufacture posts Dr 60111 / 60261
+  (materials consumed) against Cr 311 / 3261, and Dr 35511 against Cr 7245
+  (production stocked); a sale posts Dr 7245 / Cr 35511 (production
+  destocked). The monthly reclassification entry the advice planned is not
+  needed. Year-end control: class 72 equals the change in classes 33 + 35.
+- **Company defaults** (`setup/accounts.py` COMPANY_ACCOUNTS): receivable
+  4111, payable 40132, bank 5121, cash 5311, received not billed 4081,
+  stock adjustment 6572, round-off 65881, round-off for opening 479, write-off
+  65882, payment discount 668, exchange 666, disposal 6528, asset received not
+  billed 4083, depreciation 6812, assets in progress 2328, advances 4191 /
+  40913. **Cost of sales and service expense fall back to 6589 "Charges à
+  reclasser"**, never to a real account: only an item without group accounts
+  or an invoice / receipt difference lands there, and the monthly close
+  empties it. A default that is not the wizard's pick or an earlier Daftar
+  value was chosen by someone and is kept.
+- **Chart changes** (`setup/chart.py`): about 35 accounts added (reserves
+  106x, the owner's 108 and 1018, 110 / 119 and 120 / 129, machines 215,
+  offcuts 35831, TVA per rate 445711 / 445712, stamp duty 445751, couriers'
+  collections 4671x, unidentified receipts 4781, IFU 6428 / 4477, rents 6132 /
+  6135, 6589, rounding and settlement gaps 65881 / 65882 / 75882, card
+  settlements 51181); 11, 12, 5118, 6588 and 7588 become groups (only while
+  they have no entry at all); "Ouverture temporaire" becomes 479 under a new
+  class 47 liability group; 666 / 766 lose their "Round Off" type; TAP
+  (6421, 6422, 4471, repealed by LF 2024) and the works and studies income
+  lines are disabled.
+- **Supplier groups** with their payable and advance accounts (stocks 40132,
+  services 40162, public bodies 40161, foreign 40133 / 40163, fixed assets
+  4042), **payment modes** (Cash 5311, Wire Transfer 5121, Cheque 5111,
+  CCP / BaridiMob 5171, Credit Card 51181) and **asset categories** (215,
+  2182, 2183, 2184 with 6812).
+- **Settings**: moving average valuation (CMP); advances in their own
+  accounts; immutable ledger on (cancelling posts a dated reversal, decree
+  09-110 art. 13); ledger lines never deleted with a document; nobody may
+  delete an accounting or stock document, drafts included (a deleted draft
+  leaves a hole in the numbering), nor run "Delete Transactions".
+- **Demos run without the immutable ledger**: a demo is wiped and replayed,
+  and an immutable ledger would keep each wiped document's lines in its
+  month and put their reversal on the day of the wipe. A demo built before
+  21 Oct 2026 moves over with a full wipe (`demo/wipe.py`, full=1).
+- **Still for the expert-comptable** (doc section 9): 7245 as the cost of
+  own products; 4081 without class 38; 6571 / 6572 and 7571 / 7572 for count
+  gaps; finished goods at material cost during the year (labour and overheads
+  added at the year end, 35519); CMP or FIFO; offcuts at zero value; the
+  courier accounts 4671x; the numbers of the owner's accounts (1018, 108);
+  110 / 119 and 120 / 129; IFU in 6428 / 4477; the closing file's format.
 
 ## Invoices
 

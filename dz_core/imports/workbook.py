@@ -36,6 +36,8 @@ from frappe.utils import cint, flt, getdate
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import get_settings
 from dz_core.phone import normalize_phone
+from dz_core.setup.accounts import item_wise
+from dz_core.setup.item_groups import group_has_accounts
 from dz_core.setup.sectors import CLOTHING, FINISHED_GROUPS, SECTORS
 from dz_core.setup.wilayas import find_wilaya
 
@@ -409,6 +411,7 @@ def check(data, settings, report):
 	)
 	codes_in_file = set()
 	units_in_file = {}  # item code -> stock unit, for the recipe lines
+	accounts_per_item = item_wise(settings.company)
 	for sheet, kind in (("Articles", "items"), ("Modèles", "models")):
 		for number, row in data[sheet]:
 			code = str(row["code"])
@@ -419,6 +422,13 @@ def check(data, settings, report):
 			units_in_file[code] = row["uom"]
 			if row["group"] not in known_groups:
 				report.error(sheet, number, f"groupe « {row['group']} » inconnu")
+			elif accounts_per_item and not group_has_accounts(row["group"], settings.company):
+				# ERPNext would refuse the item's first stock entry
+				report.error(
+					sheet,
+					number,
+					f"le groupe « {row['group']} » n'a pas de compte de stock : choisissez un groupe du secteur",
+				)
 			if row["uom"] not in known_uoms:
 				report.error(sheet, number, f"unité « {row['uom']} » inconnue")
 			if kind == "items":

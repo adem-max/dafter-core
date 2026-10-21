@@ -42,7 +42,11 @@ after_migrate = "dz_core.setup.install.after_migrate"
 extend_bootinfo = ["dz_core.features.boot"]
 
 # One format for customer phones (dz_core/phone.py)
-doc_events = {"Customer": {"validate": "dz_core.phone.normalize_customer_phone"}}
+doc_events = {
+	"Customer": {"validate": "dz_core.phone.normalize_customer_phone"},
+	# a new item group gets its parent's accounts (setup/item_groups.py)
+	"Item Group": {"before_insert": "dz_core.setup.item_groups.inherit_parent_accounts"},
+}
 
 # montant() and montant_en_lettres() in print formats (dz_core/utils.py)
 jinja = {"methods": ["dz_core.utils.montant", "dz_core.utils.montant_en_lettres"]}

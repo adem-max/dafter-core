@@ -387,12 +387,12 @@ it calls this one first, then adds the COD part.
 | 0:00 | Client sends: company name, logo, domain, legal mentions (legal form, RC, NIF, NIS, AI), users (names, emails, roles). The filled import workbook can come later. |
 | 0:10 | DNS A record for the client domain → server (section 7). |
 | 0:15 | `bench new-site … --install-app erpnext`, `install-app dz_core`, `enable-scheduler`, `setup nginx`, `setup lets-encrypt` (section 7). |
-| 0:25 | `prepare` (above): setup wizard in French for Algeria, sector template, warehouses **Matières premières**, **Travaux en cours**, **Produits finis**, tax regime, opening-balance account, DZ Core Settings. |
+| 0:25 | `prepare` (above): setup wizard in French for Algeria, sector template, warehouses **Matières premières**, **Travaux en cours**, **Produits finis**, tax regime, opening-balance account, DZ Core Settings, then the SCF set-up (chart changes, default accounts, accounts per item group, inventory accounts per item, immutable ledger: DECISIONS.md "Chart of accounts and default accounts"). **Before any stock entry**: inventory accounts per item cannot be switched on afterwards. |
 | 0:35 | Company form, section *Mentions légales*: legal form, activity, RC, NIF, NIS, AI, capital; the company address. |
 | 0:45 | Print formats: make **Facture DZ** (Sales Invoice) and **Bon de livraison DZ** (Delivery Note) the defaults (Customize Form). Print one invoice and check it. |
 | 0:55 | Data: send the empty import workbook (`dz_core.imports.workbook.make_template`, see the README), check what comes back with a dry run, then import: suppliers, customers (phone and wilaya), items, clothing models, BOMs, opening stock. |
 | 1:35 | Users: one per person, only the roles they need; language Français (or Arabic / English). |
-| 1:50 | Smoke test with the client: one purchase receipt and one sales invoice, then cancel and delete them. |
+| 1:50 | Smoke test with the client: one purchase receipt and one sales invoice, then cancel them (deleting accounting documents is switched off: a cancel posts a dated reversal). |
 | 1:55 | Add the site to the backup check (it is automatic: the script backs up every site) and note the admin password in your password manager. |
 
 ## 14. Useful commands when something goes wrong
