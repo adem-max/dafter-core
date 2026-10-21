@@ -5,7 +5,7 @@ cash-on-delivery order desk for Algerian sellers (Instagram, Facebook,
 website). Phone confirmation, stock reservation, shipping fees by wilaya,
 courier hand-over, returns, courier cash settlement ("Versement"), webhooks
 to n8n, three reports, a demo shop. `required_apps = ["erpnext", "dz_core"]`.
-101 tests (24 unit + 77 integration).
+117 tests (24 unit + 93 integration).
 
 **The deep course on this app already exists:** dafter-cod
 `docs/STUDY_GUIDE.md` (mental model, the lines that matter, "break it on
@@ -382,6 +382,11 @@ courier (rolled back per class).
 | `test_couriers_and_webhooks.py` | Mock statuses move orders, Manuel, ZR "coming soon", webhook fires once per state change, payload is valid JSON, reports run |
 | `test_yalidine.py` (unit, fake HTTP) | parcels, statuses, quotas, imports, signed webhooks |
 | `test_places.py` | two couriers' communes and offices don't mix; the patch that renamed the Yalidine-only records |
+| `test_channel.py` | a direct sale skips the COD checks and fee and goes Nouvelle → Validée, then ERPNext's delivery note and invoice; the customer's channel; the COD counters ignore direct sales; the channel patch |
+| `test_invoicing.py` | Livrée makes one submitted invoice (taxes, delivery fee, Contre-remboursement); a Versement's Journal Entry (paid, accepted gap, open gap, unknown, overpaid lines) balances; cancelling reverses it |
+| `test_lots.py` | a COD line that needs two lots ships, comes back and is inspected |
+| `test_new_client.py` | the online seller's `prepare()` on a fresh company, twice |
+| `test_version.py` (unit) | refused on a dz_core older than `DZ_CORE_MIN` |
 | `test_features.py` | each feature off hides and refuses its part |
 | `test_home.py` | COD home page records |
 | `test_translations.py` (unit) | every French text has an English line (`i18n_strings.py`) |

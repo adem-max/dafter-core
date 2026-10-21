@@ -193,7 +193,7 @@ Run once by `bench migrate` on a hub that ran the old `dz_cod_hub`:
 *Base COD* → *Pack Atelier*), `clients_were_online_sellers` (ticks *Vente en
 ligne* on old clients: the old hub only made dz_cod sites).
 
-## tests/test_hub.py
+## tests/test_hub.py (and test_version.py: refused on a dz_core older than `DZ_CORE_MIN`)
 
 `bench --site hub-test.localhost run-tests --app dz_hub`. The `bench` calls
 are mocked: no site is created or changed. Tests: two packs and one option

@@ -333,6 +333,19 @@ sudo supervisorctl restart all                                   # restart web a
 
 When both changed, pull dz_core first: dz_cod runs on top of it.
 
+**Our three apps are released together, with one version number** (0.2.0 on
+21 Oct 2026, git tag `v0.2.0` in each repo): put dz_core, dz_cod and, on the
+hub server, dz_hub on the same version, dz_core first, then migrate. dz_cod
+and dz_hub refuse to load on an older dz_core (`DZ_CORE_MIN` in their
+`__init__.py`) with "update apps/dz_core, then bench migrate", instead of
+failing somewhere in the code.
+
+```bash
+cd ~/frappe-bench/apps/dz_core && git fetch --tags && git checkout v0.2.0
+cd ~/frappe-bench/apps/dz_cod && git fetch --tags && git checkout v0.2.0
+cd ~/frappe-bench && bench --site all migrate && bench build && sudo supervisorctl restart all
+```
+
 If something breaks after an update: `bench --site <site> migrate` again and
 read the error; worst case, restore last night's backup (section 10).
 
