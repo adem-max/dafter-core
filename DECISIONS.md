@@ -226,7 +226,9 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   a client counts on the 1st and sends the file on the 5th, and the demos
   start 13 weeks back. The batches of that count are made on that date too:
   ERPNext takes the oldest batch first, and an opening batch stamped with the
-  import day looked newer than everything produced after it.
+  import day looked newer than everything produced after it. A dated count is
+  posted at 00:00 on its day (21 October 2026): posted at the clock time of
+  the import, it came after anything entered earlier in that day's hours.
 - **Clients carry NIS and tax article (AI) too** (19 October 2026): the
   buyer's mentions on a business invoice are RC, NIF, NIS and AI; the sheet
   had only the first two. A column added later is optional in the file: a
@@ -347,6 +349,11 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
 - **Same story every time**: a day's randomness depends on the seed and that
   day only, and the first day is stored on the site, so loading again later
   replays the same past and adds the days since.
+- **Past days' documents are posted at noon** (21 October 2026), not at the
+  clock time of the load. The clothing demo, built at 11:33, failed to reload
+  at 10:00: its first day's work order fell before the opening stock posted
+  that day at 11:33. Today's documents keep the clock time (ERPNext refuses
+  stock posted in the future).
 - **Working days are Sunday to Thursday.**
 - **Outgoing batch lines are split by the engine**, oldest batch first,
   expired ones skipped: ERPNext 16 puts one batch on a line by itself and
