@@ -13,9 +13,18 @@ The story keeps its first day; to start it from a new day, drop the site.
 
 It takes several minutes (hundreds of documents). For a total reset, dropping
 and re-creating the site is faster (docs/DEMO.md).
+
+`full=1` also removes the opening stock and its lots, and deletes the ledger
+lines of everything removed (Accounts Settings "delete linked ledger
+entries", on during the wipe only). The company then has no entry at all, so
+the SCF set-up can switch it to inventory accounts per item and convert the
+ledgers it needs into groups (setup/scf.py); `load` imports the opening
+stock again from the demo workbook. That is how a demo built before
+21 October 2026 moves to the SCF set-up without dropping the site.
 """
 
 import importlib
+from contextlib import contextmanager
 
 import frappe
 
@@ -38,29 +47,58 @@ ORDER = [
 ]
 
 
-def run(profile="food"):
+def run(profile="food", full=0):
 	if profile not in PROFILES:
 		frappe.throw(f"Profil inconnu : {profile}")
 	p = importlib.import_module(f"dz_core.demo.{profile}")
 	check_site_is_for_demo(p)
-	for doctype, filters in ORDER:
-		print(f"{doctype}...")
-		remove(doctype, {"company": p.COMPANY, **filters})
+	with ledger_lines_deleted(full):
+		for doctype, filters in ORDER:
+			print(f"{doctype}...")
+			remove(doctype, {"company": p.COMPANY, **filters})
+		if full:
+			print("Stock d'ouverture...")
+			remove("Stock Reconciliation", {"company": p.COMPANY, "purpose": "Opening Stock"})
 	frappe.db.delete("Repost Item Valuation", {"company": p.COMPANY})
-	repost_opening_stock(p.COMPANY)
+	if not full:
+		repost_opening_stock(p.COMPANY)
 	# Batches made by the story (receipts and production); opening batches stay
-	for name in frappe.get_all("Batch", filters={"name": ["not like", "OUV-%"]}, pluck="name"):
+	# unless the opening stock went too
+	batch_filters = {} if full else {"name": ["not like", "OUV-%"]}
+	for name in frappe.get_all("Batch", filters=batch_filters, pluck="name"):
 		if not frappe.db.exists("Serial and Batch Entry", {"batch_no": name}):
 			frappe.delete_doc("Batch", name, force=True, ignore_permissions=True)
 	frappe.db.sql(
 		"delete from `tabDefaultValue` where defkey like %s and defkey not like %s and defkey not like %s",
 		(f"{PREFIX}::{profile}::%", f"{PREFIX}::{profile}::step::%", f"{PREFIX}::{profile}::start"),
 	)
+	if full:
+		# the masters import runs again: it re-creates the opening stock (items etc. exist)
+		frappe.db.delete("DefaultValue", {"defkey": f"{PREFIX}::{profile}::step::masters"})
+		from dz_core.demo.loader import demo_accounting
+
+		for line in demo_accounting(p.COMPANY, p.SECTOR):
+			print(f"   {line}")
 	frappe.clear_cache()
 	frappe.db.commit()
 	print(
 		f"Histoire effacée. Relancez : bench --site <site> execute dz_core.demo.loader.load --kwargs \"{{'profile': '{profile}'}}\""
 	)
+
+
+@contextmanager
+def ledger_lines_deleted(on):
+	"""Accounts Settings "delete linked ledger entries" on for the block, so the
+	ledger lines of the removed documents go with them."""
+	if not on:
+		yield
+		return
+	before = frappe.db.get_single_value("Accounts Settings", "delete_linked_ledger_entries")
+	frappe.db.set_single_value("Accounts Settings", "delete_linked_ledger_entries", 1)
+	try:
+		yield
+	finally:
+		frappe.db.set_single_value("Accounts Settings", "delete_linked_ledger_entries", before)
 
 
 def repost_opening_stock(company):
