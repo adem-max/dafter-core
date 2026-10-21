@@ -39,7 +39,7 @@ migration patches.
 | Piece | Why it stays |
 | --- | --- |
 | The four COD features themselves (courier API, phone checks, n8n webhooks, labels and reports) and their guards | They are about orders and couriers; dz_core only switches them |
-| DZ Commune, DZ Stop Desk | They are Yalidine's communes and offices (named by Yalidine's ids), not a courier-neutral list. A neutral commune list is in dz_cod's LATER.md #4; if it is built, it belongs in dz_core |
+| DZ Commune, DZ Stop Desk | They are each courier's communes and offices, one list per connector (named `<connector>-<courier's id>`, e.g. `Yalidine-1630`, since October 2026): courier data, not a commune master list. A master list is in dz_cod's LATER.md #4; if it is built, it belongs in dz_core |
 | Customer `dz_commune`, `dz_address` | The delivery snapshot COD orders copy. Producers use ERPNext's own Address |
 | Wilaya rate fields and example rates (`setup/wilayas.py` zones) | Delivery pricing is COD's |
 | Demo shop (Encre & Fil) | A COD demo. dz_core gets its own sector demos (ROADMAP Phase 2) |
