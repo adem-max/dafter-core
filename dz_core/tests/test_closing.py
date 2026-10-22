@@ -10,7 +10,7 @@ from frappe.tests import IntegrationTestCase
 from frappe.utils import flt, get_last_day, today
 
 from dz_core import closing
-from dz_core.setup.accounts import account_by_number
+from dz_core.setup.accounts import account_by_number, opening_account
 from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import SECTORS
 from dz_core.setup.tax import PURCHASE_TEMPLATE, SALES_TEMPLATE
@@ -117,6 +117,46 @@ class TestMonthlyClose(IntegrationTestCase):
 		self.assertEqual(check(closing.closing_rows(self.company, today()), "4081")["status"], closing.OK)
 		with self.assertRaises(frappe.ValidationError):
 			closing.reclassify_srbnb(self.company, today())
+
+	def test_opening_stock_is_not_production(self):
+		"""Finished goods received against the opening account (479) leave the
+		class 72 check as it was; the same receipt against 7245 too."""
+		group = next(
+			g for g, kind in SECTORS[self.settings.sector]["group_kinds"].items() if kind == "finished"
+		)
+		item = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": "CLOTURE-PF",
+				"item_name": "Produit fini clôture",
+				"item_group": group,
+				"stock_uom": "Kg",
+				"is_stock_item": 1,
+				"valuation_rate": 500,
+			}
+		).insert()
+		before = check(closing.closing_rows(self.company, today()), "Classe 72")["amount"]
+		for account in (opening_account(self.company), None):
+			receipt = frappe.get_doc(
+				{
+					"doctype": "Stock Entry",
+					"stock_entry_type": "Material Receipt",
+					"company": self.company,
+					"items": [
+						{
+							"item_code": item.name,
+							"qty": 2,
+							"basic_rate": 500,
+							"t_warehouse": self.settings.finished_goods_warehouse,
+							"expense_account": account,
+						}
+					],
+				}
+			).insert()
+			receipt.submit()
+			self.assertEqual(
+				check(closing.closing_rows(self.company, today()), "Classe 72")["amount"], before
+			)
 
 	def test_the_month_can_be_frozen(self):
 		before = frappe.db.get_value("Company", self.company, "accounts_frozen_till_date")

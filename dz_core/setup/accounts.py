@@ -21,13 +21,11 @@ accounts (set_warehouse_accounts).
 ERPNext's standard chart also has a "Temporary Opening" account for opening
 balances (opening stock, opening receivables). The Algerian chart shipped
 with ERPNext has none, and an Opening Stock reconciliation refuses to post
-without an asset or liability account of type "Temporary". So one is added;
-setup/chart.py then files it as 479 under class 47.
+without an asset or liability account of type "Temporary". So one is added:
+479 "Ouverture temporaire" under class 47 (setup/chart.py).
 """
 
 import frappe
-
-OPENING_ACCOUNT = "Ouverture temporaire"
 
 # Company field -> SCF account numbers, in order of preference: the first that
 # exists as a ledger is used (65881 needs 6588 turned into a group first)
@@ -89,18 +87,23 @@ VALUATION = "Moving Average"  # CMP: SCF allows it, Algerian accountants expect 
 
 
 def opening_account(company):
-	"""The company's Temporary account, created under the liability root if missing."""
+	"""The company's Temporary account; made if missing as 479 under the class
+	47 liability group (setup/chart.py), else under the liabilities root."""
+	from dz_core.setup.chart import OPENING, transit_group
+
 	name = frappe.db.get_value("Account", {"company": company, "account_type": "Temporary", "is_group": 0})
 	if name:
 		return name
-	parent = frappe.db.get_value(
+	number, account_name = OPENING
+	parent = transit_group(company) or frappe.db.get_value(
 		"Account",
 		{"company": company, "root_type": "Liability", "is_group": 1, "parent_account": ["is", "not set"]},
 	)
 	doc = frappe.get_doc(
 		{
 			"doctype": "Account",
-			"account_name": OPENING_ACCOUNT,
+			"account_name": account_name,
+			"account_number": number,
 			"company": company,
 			"parent_account": parent,
 			"account_type": "Temporary",

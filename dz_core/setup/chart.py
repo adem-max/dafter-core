@@ -119,13 +119,15 @@ def apply_chart_changes(company):
 
 
 def transit_group(company):
-	if frappe.db.exists("Account", {"company": company, "account_name": TRANSIT_LIABILITIES}):
-		return
+	"""The class 47 liability group, made under the liabilities root if missing."""
+	group = frappe.db.get_value("Account", {"company": company, "account_name": TRANSIT_LIABILITIES})
+	if group:
+		return group
 	root = frappe.db.get_value(
 		"Account", {"company": company, "account_name": LIABILITIES_ROOT, "is_group": 1}
 	)
 	if root:
-		insert(company, None, TRANSIT_LIABILITIES, root, 1, None)
+		return insert(company, None, TRANSIT_LIABILITIES, root, 1, None)
 
 
 def convert_to_group(company, number, log):
@@ -174,21 +176,31 @@ def insert(company, number, name, parent_account, is_group, account_type):
 
 
 def move_opening_account(company, log):
-	"""dz_core's "Ouverture temporaire" (setup/accounts.py) becomes 479 under
-	the class 47 liability group, keeping its type Temporary."""
-	number, name = OPENING
-	account = frappe.db.get_value(
-		"Account",
-		{"company": company, "account_type": "Temporary", "is_group": 0},
-		["name", "account_number"],
-		as_dict=True,
-	)
-	group = frappe.db.get_value("Account", {"company": company, "account_name": TRANSIT_LIABILITIES})
-	if not account or not group or account.account_number == number:
-		return
+	"""The opening account is 479 "Ouverture temporaire" under the class 47
+	liability group, type Temporary: setup/accounts.py makes it there. One made
+	by an earlier version (no number, under the liabilities root) is
+	renumbered and moved."""
 	from erpnext.accounts.doctype.account.account import update_account_number
 
-	update_account_number(account.name, name, number)
+	from dz_core.setup.accounts import opening_account
+
+	number, name = OPENING
+	group = transit_group(company)
+	if not group:
+		return
+	account = frappe.db.get_value(
+		"Account", opening_account(company), ["name", "account_number"], as_dict=True
+	)
+	if account.account_number == number:
+		return
+	try:
+		update_account_number(account.name, name, number)
+	except frappe.ValidationError as error:
+		# ERPNext renames an account only when no ledger entry changed in the
+		# last 5 minutes. The account works meanwhile (the close report finds
+		# it by its type); a later run renumbers it.
+		log.append(f"{name} not renumbered {number}: {error}")
+		return
 	renamed = by_number(company, number)
 	doc = frappe.get_doc("Account", renamed)
 	if doc.parent_account != group:

@@ -44,8 +44,8 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   have the WIP and finished-goods ones. The general `default_warehouse`
   followed in ERPNext 16.51; up to 16.50 it is still in Stock Settings, so
   dz_cod's demo loader writes whichever exists (19 October 2026).
-- **An opening-balance account is added** ("Ouverture temporaire", type
-  Temporary, under the liability root): the Algerian chart has none and the
+- **An opening-balance account is added** (479 "Ouverture temporaire", type
+  Temporary, under class 47 since 0.3.0): the Algerian chart has none and the
   opening stock import needs one.
 - **Algerian chart of accounts**: "Algerie - Plan Comptable General 2 avec
   code", shipped with ERPNext, same as dz_cod.
@@ -245,7 +245,8 @@ tax office (doc section 9).
   reclasser", 4781 "Versements à identifier", 476 and the opening account
   479 must be empty; suppliers invoiced before their goods arrived (debit
   balances on 4081) are listed; class 72 must equal the change in classes
-  33 + 35 since the start of the year (the opening count left out). Other
+  33 + 35 since the start of the year (what posts to 479, the opening stock,
+  left out). Other
   apps add checks through the hook `dz_closing_checks` (dz_cod: each
   courier's 4671n against the parcels it delivered and still owes for, and
   fees kept without an invoice).

@@ -80,6 +80,23 @@ def balance(company, accounts, until, since=None, exclude_vouchers=()):
 	)
 
 
+def opening_vouchers(company):
+	"""What brought the opening balances in: every voucher with a line on the
+	opening account 479 (the opening count, a receipt of opening stock...).
+	Its stock enters against 479, not 72."""
+	accounts = frappe.get_all(
+		"Account", filters={"company": company, "account_type": "Temporary"}, pluck="name"
+	)
+	if not accounts:
+		return []
+	return frappe.get_all(
+		"GL Entry",
+		filters={"company": company, "account": ["in", accounts], "is_cancelled": 0},
+		pluck="voucher_no",
+		distinct=True,
+	)
+
+
 def row(check, amount, ok, todo="", action=None):
 	return {
 		"check": check,
@@ -124,12 +141,7 @@ def closing_rows(company, month):
 		"Fiscal Year", {"year_start_date": ["<=", end], "year_end_date": [">=", end]}, "year_start_date"
 	) or get_first_day(end).replace(month=1)
 	production = -balance(company, accounts_by_prefix(company, PRODUCTION), end, since=year_start)
-	# the opening count enters stock against the opening account, not 72
-	openings = frappe.get_all(
-		"Stock Reconciliation",
-		filters={"company": company, "purpose": "Opening Stock", "docstatus": 1},
-		pluck="name",
-	)
+	openings = opening_vouchers(company)
 	stock_change = sum(
 		balance(
 			company, accounts_by_prefix(company, prefix), end, since=year_start, exclude_vouchers=openings

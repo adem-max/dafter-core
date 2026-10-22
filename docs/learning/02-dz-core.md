@@ -83,7 +83,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	run_setup_wizard(company, abbr)            # French, Algeria, DZD, Algerian chart of accounts
 	warehouses = apply_sector(sector, company) # sectors.py: groups, units, attributes, 3 warehouses
 	apply_tax_regime(company, tax_regime)      # tax.py: IFU = no TVA, réel = 19 % + 9 %
-	opening_account(company)                   # accounts.py: "Ouverture temporaire"
+	opening_account(company)                   # accounts.py: 479 "Ouverture temporaire"
 	set_default_print_formats()                # Facture DZ, Bon de livraison DZ
 	allow_printing_cancelled()                 # so FACTURE ANNULÉE can print
 	set_address_template()                     # Algerian address, no "Algeria" line
@@ -202,8 +202,10 @@ accounts and default accounts"):
 | `permissions.py` `lock_deletions` | no Delete right on accounting and stock documents, no "Delete Transactions" |
 
 `opening_account(company)` (accounts.py): the company's ledger of type
-"Temporary", else creates "Ouverture temporaire"; the chart step files it as
-479. Used by the opening stock import and the demos.
+"Temporary", else creates 479 "Ouverture temporaire" under class 47. An
+older one without a number is renumbered by the chart step, once no ledger
+entry has changed for 5 minutes (ERPNext's rule for renaming an account).
+Used by the opening stock import and the demos.
 
 ## setup/tax.py and closing.py (TVA, monthly close, 21 October 2026)
 
