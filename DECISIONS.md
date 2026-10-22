@@ -16,6 +16,12 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   whatever the brand becomes. Renaming a Frappe app later means renaming a
   Python package and its module on every live site; the brand lives in the
   repo names, `app_title`, logos and the website.
+- **Brand: Sijil (company), Daftar (the ERP)** (22 October 2026). Sijil (سجل,
+  "register") is the company and umbrella brand, free of any one country, for
+  every SaaS it builds; Daftar is this ERP's product name ("Daftar by Sijil").
+  "Daftar" alone is used by a real estate agency, "Daftar DZ" ties the brand
+  to Algeria, "Daftar ERP" ties it to one product. Note only: nothing renamed
+  yet (app names stay, see above).
 
 - **The split with dz_cod is finished** (19 October 2026, `docs/SPLIT.md`).
   Rule: what every client needs goes here, what only an online seller needs
