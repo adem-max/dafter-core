@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-22 10:00:00.000000",
+ "description": "Qui a validé, annulé ou modifié quoi, quand et d'où (décret 09-110, art. 18).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "operation",
+  "reference_doctype",
+  "reference_name",
+  "company",
+  "column_break_main",
+  "user",
+  "ip_address",
+  "device",
+  "details"
+ ],
+ "fields": [
+  {
+   "fieldname": "operation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Opération",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type de document",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Document",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Société",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Utilisateur",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "Adresse IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Small Text",
+   "label": "Poste (navigateur)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details",
+   "fieldtype": "Small Text",
+   "label": "Détails",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-22 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "DZ Audit Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

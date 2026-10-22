@@ -10,6 +10,7 @@ from frappe.utils.nestedset import get_root_of
 
 from dz_core.dz_core.report.valeur_du_stock import valeur_du_stock
 from dz_core.dz_core.report.ventes_par_mois import ventes_par_mois
+from dz_core.setup.item_groups import RAW, set_group_accounts
 from dz_core.tests.test_core import ensure_prepared
 
 
@@ -32,6 +33,8 @@ class TestStockValue(IntegrationTestCase):
 			.insert()
 			.name
 		)
+		# the group's accounts: inventory accounts are per item (group) (setup/item_groups.py)
+		set_group_accounts(cls.company, cls.group, RAW)
 		cls.item = make_item(f"RM-{t}", cls.group, "Kg")
 		cls.warehouse = cls.settings.raw_materials_warehouse
 		receipt = frappe.get_doc(

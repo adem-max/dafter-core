@@ -64,10 +64,10 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: ${{ runner.os }}-pip-
 
-      - name: MariaDB client
+      - name: MariaDB client and wkhtmltopdf (PDFs of the closing file and archive)
         run: |
           sudo apt-get update
-          sudo apt-get install -y mariadb-client
+          sudo apt-get install -y mariadb-client wkhtmltopdf
 
       - name: Bench with Frappe and ERPNext 16
         run: |

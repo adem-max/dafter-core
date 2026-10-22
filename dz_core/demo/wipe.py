@@ -13,9 +13,19 @@ The story keeps its first day; to start it from a new day, drop the site.
 
 It takes several minutes (hundreds of documents). For a total reset, dropping
 and re-creating the site is faster (docs/DEMO.md).
+
+`full=1` also removes the opening stock and its lots, and deletes the ledger
+lines of everything removed (Accounts Settings "delete linked ledger
+entries", on during the wipe only). The company then has no entry at all, so
+the SCF set-up can switch it to inventory accounts per item and convert the
+ledgers it needs into groups (setup/scf.py); `load` imports the opening
+stock again from the demo workbook. That is how a demo built before
+21 October 2026 moves to the SCF set-up without dropping the site.
 """
 
 import importlib
+import time
+from contextlib import contextmanager
 
 import frappe
 
@@ -38,29 +48,76 @@ ORDER = [
 ]
 
 
-def run(profile="food"):
+def run(profile="food", full=0):
 	if profile not in PROFILES:
 		frappe.throw(f"Profil inconnu : {profile}")
 	p = importlib.import_module(f"dz_core.demo.{profile}")
 	check_site_is_for_demo(p)
-	for doctype, filters in ORDER:
-		print(f"{doctype}...")
-		remove(doctype, {"company": p.COMPANY, **filters})
+	with ledger_lines_deleted(full):
+		for doctype, filters in ORDER:
+			print(f"{doctype}...")
+			remove(doctype, {"company": p.COMPANY, **filters})
+		if full:
+			print("Stock d'ouverture...")
+			remove("Stock Reconciliation", {"company": p.COMPANY, "purpose": "Opening Stock"})
 	frappe.db.delete("Repost Item Valuation", {"company": p.COMPANY})
-	repost_opening_stock(p.COMPANY)
+	forget_books(p.COMPANY)
+	if not full:
+		repost_opening_stock(p.COMPANY)
 	# Batches made by the story (receipts and production); opening batches stay
-	for name in frappe.get_all("Batch", filters={"name": ["not like", "OUV-%"]}, pluck="name"):
+	# unless the opening stock went too
+	batch_filters = {} if full else {"name": ["not like", "OUV-%"]}
+	for name in frappe.get_all("Batch", filters=batch_filters, pluck="name"):
 		if not frappe.db.exists("Serial and Batch Entry", {"batch_no": name}):
 			frappe.delete_doc("Batch", name, force=True, ignore_permissions=True)
 	frappe.db.sql(
 		"delete from `tabDefaultValue` where defkey like %s and defkey not like %s and defkey not like %s",
 		(f"{PREFIX}::{profile}::%", f"{PREFIX}::{profile}::step::%", f"{PREFIX}::{profile}::start"),
 	)
+	if full:
+		# the masters import runs again: it re-creates the opening stock (items etc. exist)
+		frappe.db.delete("DefaultValue", {"defkey": f"{PREFIX}::{profile}::step::masters"})
+		from dz_core.demo.loader import demo_accounting
+
+		for line in demo_accounting(p.COMPANY, p.SECTOR):
+			print(f"   {line}")
 	frappe.clear_cache()
 	frappe.db.commit()
 	print(
 		f"Histoire effacée. Relancez : bench --site <site> execute dz_core.demo.loader.load --kwargs \"{{'profile': '{profile}'}}\""
 	)
+
+
+def forget_books(company):
+	"""The audit trail and the archives of the wiped story: on a client site
+	neither is ever deleted (books/audit.py, books/archive.py), a demo starts
+	again from nothing."""
+	frappe.flags.dz_wipe = True
+	try:
+		frappe.db.delete("DZ Audit Log", {"company": company})
+		for name in frappe.get_all("DZ Archive", filters={"company": company}, pluck="name"):
+			for file in frappe.get_all(
+				"File", filters={"attached_to_doctype": "DZ Archive", "attached_to_name": name}, pluck="name"
+			):
+				frappe.delete_doc("File", file, force=True, ignore_permissions=True)
+			frappe.delete_doc("DZ Archive", name, force=True, ignore_permissions=True)
+	finally:
+		frappe.flags.dz_wipe = False
+
+
+@contextmanager
+def ledger_lines_deleted(on):
+	"""Accounts Settings "delete linked ledger entries" on for the block, so the
+	ledger lines of the removed documents go with them."""
+	if not on:
+		yield
+		return
+	before = frappe.db.get_single_value("Accounts Settings", "delete_linked_ledger_entries")
+	frappe.db.set_single_value("Accounts Settings", "delete_linked_ledger_entries", 1)
+	try:
+		yield
+	finally:
+		frappe.db.set_single_value("Accounts Settings", "delete_linked_ledger_entries", before)
 
 
 def repost_opening_stock(company):
@@ -88,6 +145,34 @@ def remove(doctype, filters):
 			doc.flags.ignore_links = True
 			doc.flags.ignore_permissions = True
 			doc.cancel()
-	for name in names:
+	for count, name in enumerate(names, 1):
 		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+		if count % BATCH == 0:
+			commit_when_workers_keep_up()
+	commit_when_workers_keep_up()
+
+
+# Frappe queues one clean-up job per deleted document when the deletion is
+# committed (delete_dynamic_links), and refuses new jobs past 1,000
+BATCH = 100
+QUEUE_ROOM = 500
+QUEUE_PATIENCE = 600  # seconds without progress before giving up
+
+
+def commit_when_workers_keep_up():
+	"""Commit once the background queue has room for this batch's clean-up
+	jobs. The workers of `bench start` empty it; without them the wipe stops
+	with a clear message instead of Frappe's "Too many queued background jobs"."""
+	from frappe.utils.background_jobs import get_queue
+
+	queue = get_queue("default")
+	waited, last = 0, queue.count
+	while queue.count > QUEUE_ROOM:
+		time.sleep(5)
+		waited = 0 if queue.count < last else waited + 5
+		last = queue.count
+		if waited >= QUEUE_PATIENCE:
+			frappe.throw(
+				f"La file des tâches ne se vide pas ({queue.count} tâches) : lancez les workers (bench start)."
+			)
 	frappe.db.commit()

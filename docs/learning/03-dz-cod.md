@@ -5,7 +5,7 @@ cash-on-delivery order desk for Algerian sellers (Instagram, Facebook,
 website). Phone confirmation, stock reservation, shipping fees by wilaya,
 courier hand-over, returns, courier cash settlement ("Versement"), webhooks
 to n8n, three reports, a demo shop. `required_apps = ["erpnext", "dz_core"]`.
-118 tests (24 unit + 94 integration).
+121 tests (24 unit + 97 integration).
 
 **The deep course on this app already exists:** dafter-cod
 `docs/STUDY_GUIDE.md` (mental model, the lines that matter, "break it on
@@ -164,9 +164,10 @@ def on_update_after_submit(order, ...):      # stock AFTER the new state is save
 
 ### cod/shipping.py (STUDY_GUIDE §5)
 
-**What:** the delivery fee from the wilaya rate table, added as a line in
-the standard "Taxes and Charges" table (type "Actual"), exactly like
-ERPNext's Shipping Rule, so totals, delivery note and ledger include it.
+**What:** the delivery fee from the wilaya rate table, added as an item
+line (`FRAIS-LIVRAISON`, non-stock, income 7088), so it is taxed like the
+goods and totals, delivery note, invoice and ledger include it (until 0.3.0:
+a charge row after the TVA in "Taxes and Charges").
 
 ```python
 def get_rates(wilaya, delivery_type):
@@ -215,14 +216,20 @@ over several Versements.
 ### cod/invoicing.py (COD accounting)
 
 - `invoice_delivered_order`: when an order becomes Livrée (`on_update_after_submit`),
-  its Sales Invoice is made from the delivery note (`make_sales_invoice`), dated the
-  delivery, payment mode "Contre-remboursement", submitted and linked on the order
-  (`dz_sales_invoice`). dz_core's sales reports then count online sales.
-- `settlement_entry`: on a Versement's submit, one Journal Entry. Debit the bank and the
-  courier fees; credit each order's invoice with what the courier collected; an accepted
-  short payment is written off ("Écarts sur versements"); unknown parcels wait in
-  "Versements à identifier". Cancelling the Versement cancels the entry.
-- The accounts are COD Settings fields (section Comptabilité), made by `prepare` and on migrate.
+  after the delivery note out of "Chez transporteur" (`stock.deliver_order`), its Sales
+  Invoice is made from it (`make_sales_invoice`), dated the delivery, payment mode
+  "Contre-remboursement", submitted and linked on the order (`dz_sales_invoice`);
+  `pay_to_courier` then pays it into the courier's account 4671n (`dz_payment_entry`).
+  dz_core's sales reports count online sales.
+- `settlement_entry`: on a Versement's submit, one Journal Entry. Debit the bank (amount
+  received) and the courier's supplier account (the fees it kept); credit the courier's
+  4671n with each parcel's collection; an accepted short payment is written off to 65882,
+  an overpayment goes to 75882, unknown parcels wait in 4781. Cancelling the Versement
+  cancels the entry.
+- `cod/accounts.py`: the couriers' 4671n accounts (`courier_account`), the couriers'
+  supplier group (40162), the delivery fee item, "Chez transporteur", and the Versement
+  accounts by SCF number (COD Settings, section Comptabilité, made by `prepare` and on
+  migrate).
 
 ### cod/phone_checks.py
 

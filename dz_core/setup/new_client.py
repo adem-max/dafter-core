@@ -9,9 +9,9 @@ Run once, right after `bench new-site` and `bench --site <site> install-app dz_c
 It runs the setup wizard (French, Algeria, DZD, Algerian chart of accounts),
 applies the sector template (item groups, units, attributes, the three
 warehouses and which group goes where), applies the tax regime, adds the
-opening-balance account, fills DZ Core Settings and puts the SCF accounts in
-the company's defaults (setup/accounts.py). Safe to run twice: whatever
-already exists is skipped.
+opening-balance account, fills DZ Core Settings and applies the SCF set-up
+(setup/scf.py: chart changes, default accounts, accounting settings, accounts
+per item group). Safe to run twice: whatever already exists is skipped.
 
 It also makes "Facture DZ" and "Bon de livraison DZ" the default print formats
 (unless the client already chose others), and the Atelier home page the page
@@ -30,9 +30,10 @@ from frappe.custom.doctype.property_setter.property_setter import make_property_
 from frappe.utils import today
 
 from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU
-from dz_core.setup.accounts import opening_account, set_default_accounts
+from dz_core.setup.accounts import opening_account
+from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import apply_sector
-from dz_core.setup.tax import IFU_NOTE, apply_tax_regime
+from dz_core.setup.tax import NOTES, apply_tax_regime
 
 CHART_OF_ACCOUNTS = "Algerie - Plan Comptable General 2 avec code"
 
@@ -43,7 +44,6 @@ DEFAULT_PRINT_FORMATS = {"Sales Invoice": "Facture DZ", "Delivery Note": "Bon de
 def prepare(company, abbr, sector, tax_regime=IFU):
 	run_setup_wizard(company, abbr)
 	warehouses = apply_sector(sector, company)
-	apply_tax_regime(company, tax_regime)
 	opening_account(company)
 	set_default_print_formats()
 	allow_printing_cancelled()
@@ -52,10 +52,13 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
-	if tax_regime == IFU and not settings.invoice_note:
-		settings.invoice_note = IFU_NOTE
+	if tax_regime in NOTES and not settings.invoice_note:
+		settings.invoice_note = NOTES[tax_regime]
 	settings.save(ignore_permissions=True)
-	set_default_accounts(company)  # after the settings: it gives their warehouses an account
+	# Chart, default accounts, settings, accounts per item group, before any entry
+	apply_scf_setup(company, sector)
+	# after the chart changes: the TVA templates post to 445711 / 445712 / 44566
+	apply_tax_regime(company, tax_regime)
 	frappe.db.commit()
 	print(f"{company} is ready ({sector}, {tax_regime}).")
 	print("Next: legal mentions on the Company form, users, then the import workbook.")

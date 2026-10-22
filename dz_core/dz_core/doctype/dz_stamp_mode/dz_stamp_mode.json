@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-10-22 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "mode",
+  "charge"
+ ],
+ "fields": [
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mode de paiement",
+   "options": "Espèces\nChèque\nVirement\nContre-remboursement",
+   "reqd": 1
+  },
+  {
+   "default": "Ajouté à la facture",
+   "fieldname": "charge",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Qui le paie",
+   "options": "Ajouté à la facture\nÀ la charge du vendeur",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-22 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "DZ Stamp Mode",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

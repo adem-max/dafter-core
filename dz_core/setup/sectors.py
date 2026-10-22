@@ -12,6 +12,8 @@ templates (dz_core/imports).
 import frappe
 from frappe.utils.nestedset import get_root_of
 
+from dz_core.setup.item_groups import FINISHED, PACKAGING, RAW, TRIMS
+
 FOOD = "Alimentaire et cosmétique"
 CLOTHING = "Confection"
 
@@ -33,6 +35,8 @@ SECTORS = {
 	FOOD: {
 		# Item groups under "All Item Groups"
 		"item_groups": ["Matières premières", "Emballages", "Produits finis"],
+		# The kind of each group: its accounts (setup/item_groups.py)
+		"group_kinds": {"Matières premières": RAW, "Emballages": PACKAGING, "Produits finis": FINISHED},
 		# Units the trade counts in, on top of ERPNext's own (Kg, Gram, Litre...)
 		# (name, whole number only?)
 		"uoms": [("Pot", 1), ("Flacon", 1), ("Sachet", 1), ("Carton", 1), ("Bocal", 1), ("Barquette", 1)],
@@ -45,6 +49,12 @@ SECTORS = {
 	},
 	CLOTHING: {
 		"item_groups": ["Tissus", "Fournitures", "Emballages", "Produits finis"],
+		"group_kinds": {
+			"Tissus": RAW,
+			"Fournitures": TRIMS,
+			"Emballages": PACKAGING,
+			"Produits finis": FINISHED,
+		},
 		"uoms": [("Pièce", 1), ("Rouleau", 1), ("Carton", 1), ("Cône", 0)],
 		"batch_groups": [],
 		# One BOM per model (template item), the variants carry size and colour

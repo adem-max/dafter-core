@@ -106,6 +106,10 @@ password chosen at `new-site`. Every login lands on the Atelier home page
   `bench --site food-demo.localhost execute dz_core.demo.wipe.run --kwargs "{'profile': 'food'}"`,
   then `load` again. Keeps the company, imported masters, opening stock, prices
   and users; takes several minutes.
+- **Move a demo built before 0.3.0 to the SCF set-up** (inventory accounts
+  per item, chart changes): the wipe with `'full': 1` in its kwargs also
+  removes the opening stock and the ledger lines, then `load` imports the
+  opening stock again.
 - **Total reset** (faster, and the story starts again 13 weeks before today):
   `bench drop-site food-demo.localhost --force`, then "Create a demo site".
 

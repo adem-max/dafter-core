@@ -4,7 +4,7 @@ The base every client gets (Pack Atelier): one-command setup, sector
 templates, the tax regime, legal invoices, the Excel import workbook, the
 69 wilayas, phone numbers, producer reports, the Atelier home page, the
 optional-feature switches, backups and the two producer demos.
-`required_apps = ["erpnext"]`. 68 tests (13 unit + 55 integration).
+`required_apps = ["erpnext"]`. 82 tests (13 unit + 69 integration).
 
 ```
 dafter-core/
@@ -83,7 +83,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	run_setup_wizard(company, abbr)            # French, Algeria, DZD, Algerian chart of accounts
 	warehouses = apply_sector(sector, company) # sectors.py: groups, units, attributes, 3 warehouses
 	apply_tax_regime(company, tax_regime)      # tax.py: IFU = no TVA, réel = 19 % + 9 %
-	opening_account(company)                   # accounts.py: "Ouverture temporaire"
+	opening_account(company)                   # accounts.py: 479 "Ouverture temporaire"
 	set_default_print_formats()                # Facture DZ, Bon de livraison DZ
 	allow_printing_cancelled()                 # so FACTURE ANNULÉE can print
 	set_address_template()                     # Algerian address, no "Algeria" line
@@ -91,7 +91,7 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
 	...
-	set_default_accounts(company)              # accounts.py: SCF defaults instead of the wizard's picks
+	apply_scf_setup(company, sector)           # scf.py: chart, default accounts, settings, item group accounts
 ```
 
 Step by step, the part to be able to tell without opening the file:
@@ -184,25 +184,64 @@ def apply_tax_regime(company, regime):
 
 `template_with_rate(doctype, company, rate)` finds a template whose only
 rate is `rate`. `IFU_NOTE = "Contribuable soumis à l'IFU : TVA non facturée."`
-(editable in DZ Core Settings). Not built, waiting for the accountant: stamp
-duty on cash, G50 helper, IFU turnover report.
+(editable in DZ Core Settings), `AUTO_NOTE` for an auto-entrepreneur (0.4.0,
+no TVA either). The stamp duty is `stamp.py`, the G50 and G12 helpers are in
+`closing.py` and `books/ifu.py` (below).
 
-## setup/accounts.py
+## books/ (0.4.0, 22 October 2026): the books as the law and the accountant want them
 
-`opening_account(company)`: the company's leaf account of type "Temporary",
-else creates "Ouverture temporaire" under the liability root. Used by the
-opening stock import and the demos.
+docs/COMPLIANCE.md maps decree 09-110 article by article.
 
-`set_default_accounts(company)`: the setup wizard fills the Company's
-default accounts with the last account of each type in the Algerian chart
-(receivables in 4172, the bank in 5176, stock in 3451...). This puts the SCF
-accounts there by number (`COMPANY_ACCOUNTS`: 4111, 40132, 5121, 5311, 4081,
-35511, 6031, 7011, 7245, 6588, 6812, 2328), only where the wizard's pick or
-nothing is, so a choice someone made is kept. It adds 35511 "Produits finis"
-(the chart has no ledger for finished goods), gives the three warehouses
-311 / 3311 / 35511, and moves the modes of payment that pointed to the old
-cash or bank account. Patch `scf_default_accounts` did the same on existing
-sites. DECISIONS.md "Default accounts" lists what the accountant must confirm.
+| Module | What |
+| --- | --- |
+| `journals.py` | each ledger line's journal (VE, AC, CA, BQ, ST, OD, AN) from its voucher, computed, never stored |
+| `export.py` | the entry export of a period in the FEC layout, à-nouveaux on a year's first day; report "Export des écritures" |
+| `audit.py` | DZ Audit Log: user, IP, browser on every validation, cancellation, change after validation, freeze-date change |
+| `archive.py` | DZ Archive: files kept with their SHA-256 and a `sha256sum` register; `make_archive` for a frozen year |
+| `tables.py` | balance générale, grand livre, centralising journal, aged balances, stock statement, asset register, TVA per month; Excel, PDF and CSV writers |
+| `statements.py` | the SCF compte de résultat and bilan as ERPNext 16 Financial Report Templates, set up on every migrate |
+| `year_end.py` | report "Exercice comptable": year-end checks, closing (Stock Closing Entry, then the Period Closing Voucher into 120 / 129), freezing |
+| `closing_file.py` | the accountant's "Dossier de clôture" |
+| `registers.py`, `ifu.py` | sales and purchases registers; "Aide G12" and the IFU entry |
+
+Also 0.4.0: `stamp.py` (stamp duty), `tax_checks.py` (60,000 DA items,
+purchases without an invoice, 1 M DA cash, TVA on losses and gifts),
+`imports/opening.py` (opening from the trial balance).
+
+## setup/scf.py and its parts (the SCF set-up, 21 October 2026)
+
+`apply_scf_setup(company, sector)` runs, in order (DECISIONS.md "Chart of
+accounts and default accounts"):
+
+| Module | What |
+| --- | --- |
+| `chart.py` `apply_chart_changes` | about 35 accounts added (4671x couriers, 4781, 6589, 65881...), 11 / 12 / 5118 / 6588 / 7588 turned into groups while empty, re-typings, "Ouverture temporaire" moved to 479, TAP and works accounts disabled |
+| `accounts.py` `set_accounting_settings` | item-wise inventory accounts and moving average (only before the first stock entry), advances apart, immutable ledger, no ledger deletion |
+| `accounts.py` `set_default_accounts` | the Company's defaults by SCF number (`COMPANY_ACCOUNTS`), replacing only the wizard's or an earlier Daftar pick (`REPLACEABLE`); cost of sales falls back to 6589 "Charges à reclasser" |
+| `item_groups.py` `setup_item_groups` | every group's stock, cost of sales, consumption and income accounts by kind (raw, trims, packaging, finished, merchandise, scrap), plus "Services achetés" sub-groups with their expense account; `inherit_parent_accounts` (hooks.py) gives a new group its parent's |
+| `parties.py` `setup_parties` | supplier groups, payment modes, asset categories with their accounts |
+| `permissions.py` `lock_deletions` | no Delete right on accounting and stock documents, no "Delete Transactions" |
+
+`opening_account(company)` (accounts.py): the company's ledger of type
+"Temporary", else creates 479 "Ouverture temporaire" under class 47. An
+older one without a number is renumbered by the chart step, once no ledger
+entry has changed for 5 minutes (ERPNext's rule for renaming an account).
+Used by the opening stock import and the demos.
+
+## setup/tax.py and closing.py (TVA, monthly close, 21 October 2026)
+
+`setup_tva(company)`: the per-rate templates "TVA ventes" (445711 / 445712)
+and "TVA achats" (44566 / 44562) at rate 0, the Item Tax Templates "TVA
+19 %", "TVA 9 %", "Exonéré", "TVA 19 % immobilisations", and "TVA 19 %" on
+every item group of the company. `apply_tax_regime` makes the two templates
+the defaults on the régime réel, none on IFU.
+
+`closing.py`: `balance(company, accounts, until, since)` reads the ledger by
+SCF number; `closing_rows` feeds the report "Cloture du mois" (shown as
+"Clôture du mois"), with the actions `reclassify_srbnb` (4081 → 4097 and its
+reversal) and `freeze_month`; `tva_figures` feeds "Aide G50", and
+`make_tva_settlement` posts the month's TVA settlement. Apps add close
+checks through the hook `dz_closing_checks`.
 
 ## setup/custom_fields.py
 
@@ -544,7 +583,7 @@ Phase 1.
 
 ## tests/
 
-`bench --site test.localhost run-tests --app dz_core` (68 tests).
+`bench --site test.localhost run-tests --app dz_core` (82 tests).
 
 | File | Checks |
 | --- | --- |
@@ -552,7 +591,8 @@ Phase 1.
 | `test_places_and_phones.py` | phone formats (unit), 69 wilayas and parents, `simplify`, `find_wilaya`, Customer phone normalized |
 | `test_features.py` | catalogue per app, missing key = base only, "all", list followed, the patch for older sites, legacy key, `requires_feature` message, boot, `bench_catalog` reads apps not installed |
 | `test_reports.py` | Coût de revient follows the last purchase; À acheter; À produire |
-| `test_accounts.py` | the SCF default accounts after `prepare()`, warehouses' stock accounts; the wizard's picks are replaced and a choice is kept; the patch twice |
+| `test_closing.py` | an amount in 6589 is flagged; an invoice before its goods is reclassified to 4097 once; the month can be frozen; the month's TVA per rate and its settlement, once |
+| `test_accounts.py` | the SCF set-up: chart changes (twice creates nothing), default accounts, settings, accounts on every sector and service group, a new subgroup inherits, the import refuses a group without accounts, a receipt and an issue post to 311 / 60111, no Delete right, supplier groups, earlier picks replaced and choices kept, the patch twice |
 | `test_reports_stock_sales.py` | Valeur du stock equals Stock Balance (total, quantities, at a date); Ventes par mois equals the invoices, evolution, by customer, credit notes |
 | `test_home.py` | home page records loaded, counters equal the lists, a material under its level shows, login opens Atelier |
 | `test_restore_check.py` | counts, hooks from apps on top, a password from another key is reported |

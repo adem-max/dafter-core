@@ -292,7 +292,16 @@ class Engine:
 		return self.save(entry)
 
 	def labour_account(self):
-		"""An expense account for direct labour, created under the expenses root if missing."""
+		"""The account the batch's labour is absorbed against: 7245 "production
+		stockée" on the SCF set-up (advice of 21 Oct 2026: a client who absorbs
+		labour points the operating cost there), so class 72 carries the full
+		production cost. Else an expense account for direct labour, created
+		under the expenses root if missing (a demo built before 0.3.0)."""
+		from dz_core.setup.accounts import account_by_number
+
+		scf = account_by_number(self.company, "7245")
+		if scf:
+			return scf
 		name = frappe.db.get_value(
 			"Account", {"company": self.company, "account_name": "Main-d'œuvre de production"}
 		)

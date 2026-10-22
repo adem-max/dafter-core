@@ -13,7 +13,10 @@
   "raw_materials_warehouse",
   "wip_warehouse",
   "column_break_wh",
-  "finished_goods_warehouse"
+  "finished_goods_warehouse",
+  "stamp_section",
+  "stamp_duty",
+  "stamp_modes"
  ],
  "fields": [
   {
@@ -39,10 +42,10 @@
    "fieldname": "tax_regime",
    "fieldtype": "Select",
    "label": "Régime fiscal",
-   "options": "IFU\nRégime réel",
+   "options": "IFU\nRégime réel\nAuto-entrepreneur",
    "reqd": 1,
    "default": "IFU",
-   "description": "IFU : pas de TVA sur les factures. Régime réel : TVA appliquée par défaut."
+   "description": "IFU et auto-entrepreneur : pas de TVA sur les factures. Régime réel : TVA appliquée par défaut."
   },
   {
    "fieldname": "invoice_note",
@@ -76,12 +79,32 @@
    "fieldtype": "Link",
    "label": "Produits finis",
    "options": "Warehouse"
+  },
+  {
+   "fieldname": "stamp_section",
+   "fieldtype": "Section Break",
+   "label": "Droit de timbre"
+  },
+  {
+   "default": "0",
+   "description": "Droit de timbre de quittance sur les factures payées en espèces (barème de la circulaire 14/MF/DGI/LF.2025). À activer après l'accord du comptable ou de l'administration fiscale.",
+   "fieldname": "stamp_duty",
+   "fieldtype": "Check",
+   "label": "Calculer le droit de timbre"
+  },
+  {
+   "depends_on": "stamp_duty",
+   "description": "Chèque et virement : pas de timbre quand la facture porte leurs références (art. 258). Carte et BaridiMob sont exonérés. Contre-remboursement : seulement à la charge du vendeur, en attendant la réponse de l'administration.",
+   "fieldname": "stamp_modes",
+   "fieldtype": "Table",
+   "label": "Modes de paiement soumis au timbre",
+   "options": "DZ Stamp Mode"
   }
  ],
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-18 21:00:00.000000",
+ "modified": "2026-10-22 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "DZ Core",
  "name": "DZ Core Settings",

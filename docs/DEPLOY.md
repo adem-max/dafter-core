@@ -245,6 +245,12 @@ bench setup nginx && sudo systemctl reload nginx
    passwords stored in ERPNext (email accounts, couriers' API tokens) cannot be
    decrypted after a restore. Keep it, and keep the backups private.
 
+**Ten years of books** (CPF art. 64): the yearly archive ("Archive annuelle",
+report "Exercice comptable") and the closing files are the site's private
+files, so every backup carries them. Never delete a site's private files, and
+keep one off-site backup per year, taken after that year's archive, for ten
+years (the daily remote history alone is not enough).
+
 ## 10. Restore (tested)
 
 **Monthly drill, one command.** `scripts/restore_test.sh` restores the latest
@@ -333,16 +339,16 @@ sudo supervisorctl restart all                                   # restart web a
 
 When both changed, pull dz_core first: dz_cod runs on top of it.
 
-**Our three apps are released together, with one version number** (0.2.0 on
-21 Oct 2026, git tag `v0.2.0` in each repo): put dz_core, dz_cod and, on the
+**Our three apps are released together, with one version number** (0.2.0 and
+0.3.0 on 21 Oct 2026, 0.4.0 on 22 Oct 2026, git tags `v0.2.0`, `v0.3.0`, `v0.4.0` in each repo): put dz_core, dz_cod and, on the
 hub server, dz_hub on the same version, dz_core first, then migrate. dz_cod
 and dz_hub refuse to load on an older dz_core (`DZ_CORE_MIN` in their
 `__init__.py`) with "update apps/dz_core, then bench migrate", instead of
 failing somewhere in the code.
 
 ```bash
-cd ~/frappe-bench/apps/dz_core && git fetch --tags && git checkout v0.2.0
-cd ~/frappe-bench/apps/dz_cod && git fetch --tags && git checkout v0.2.0
+cd ~/frappe-bench/apps/dz_core && git fetch --tags && git checkout v0.4.0
+cd ~/frappe-bench/apps/dz_cod && git fetch --tags && git checkout v0.4.0
 cd ~/frappe-bench && bench --site all migrate && bench build && sudo supervisorctl restart all
 ```
 
@@ -387,12 +393,13 @@ it calls this one first, then adds the COD part.
 | 0:00 | Client sends: company name, logo, domain, legal mentions (legal form, RC, NIF, NIS, AI), users (names, emails, roles). The filled import workbook can come later. |
 | 0:10 | DNS A record for the client domain → server (section 7). |
 | 0:15 | `bench new-site … --install-app erpnext`, `install-app dz_core`, `enable-scheduler`, `setup nginx`, `setup lets-encrypt` (section 7). |
-| 0:25 | `prepare` (above): setup wizard in French for Algeria, sector template, warehouses **Matières premières**, **Travaux en cours**, **Produits finis**, tax regime, opening-balance account, DZ Core Settings. |
+| 0:25 | `prepare` (above): setup wizard in French for Algeria, sector template, warehouses **Matières premières**, **Travaux en cours**, **Produits finis**, tax regime, opening-balance account, DZ Core Settings, then the SCF set-up (chart changes, default accounts, accounts per item group, inventory accounts per item, immutable ledger: DECISIONS.md "Chart of accounts and default accounts"). **Before any stock entry**: inventory accounts per item cannot be switched on afterwards. |
 | 0:35 | Company form, section *Mentions légales*: legal form, activity, RC, NIF, NIS, AI, capital; the company address. |
 | 0:45 | Print formats: make **Facture DZ** (Sales Invoice) and **Bon de livraison DZ** (Delivery Note) the defaults (Customize Form). Print one invoice and check it. |
 | 0:55 | Data: send the empty import workbook (`dz_core.imports.workbook.make_template`, see the README), check what comes back with a dry run, then import: suppliers, customers (phone and wilaya), items, clothing models, BOMs, opening stock. |
-| 1:35 | Users: one per person, only the roles they need; language Français (or Arabic / English). |
-| 1:50 | Smoke test with the client: one purchase receipt and one sales invoice, then cancel and delete them. |
+| 1:20 | Opening balances, when the client had books: the accountant's closing trial balance and open invoices (`dz_core.imports.opening`, dry run first; 479 must end at zero), then existing fixed assets by hand (Asset, "Is Existing Asset"). docs/COMPLIANCE.md. |
+| 1:35 | Users: one per person, only the roles they need; language Français (or Arabic / English). Give the client docs/MANUEL-PROCEDURES.md and, once signed, the publisher's commitment (docs/ENGAGEMENT-EDITEUR.md). |
+| 1:50 | Smoke test with the client: one purchase receipt and one sales invoice, then cancel them (deleting accounting documents is switched off: a cancel posts a dated reversal). |
 | 1:55 | Add the site to the backup check (it is automatic: the script backs up every site) and note the admin password in your password manager. |
 
 ## 14. Useful commands when something goes wrong

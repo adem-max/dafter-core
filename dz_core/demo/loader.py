@@ -97,6 +97,7 @@ def setup_company(p, start):
 
 	if frappe.db.get_single_value("DZ Core Settings", "company") != p.COMPANY:
 		prepare(p.COMPANY, p.ABBR, p.SECTOR, p.TAX_REGIME)
+	demo_accounting(p.COMPANY, p.SECTOR)
 	# a demo prepared before the home page existed lands there too
 	make_atelier_the_home_page()
 	ensure_fiscal_years(start)
@@ -104,6 +105,25 @@ def setup_company(p, start):
 	company.update(p.LEGAL)
 	company.save(ignore_permissions=True)
 	ensure_address(p)
+
+
+def demo_accounting(company, sector):
+	"""The SCF set-up (again, for a demo built before it), with one demo-only
+	difference: no immutable ledger. A demo is wiped and replayed, and an
+	immutable ledger would leave each wiped document's lines in its month and
+	their reversal on the day of the wipe. Returns the set-up's log."""
+	from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import REEL
+	from dz_core.setup.scf import apply_scf_setup
+
+	log = apply_scf_setup(company, sector)
+	frappe.db.set_single_value("Accounts Settings", "enable_immutable_ledger", 0)
+	# a régime réel demo shows the stamp duty on its cash invoices (stamp.py)
+	settings = frappe.get_single("DZ Core Settings")
+	if settings.company == company and settings.tax_regime == REEL and not settings.stamp_duty:
+		settings.stamp_duty = 1
+		settings.save(ignore_permissions=True)
+		log.append("stamp duty on")
+	return log
 
 
 def ensure_fiscal_years(start):

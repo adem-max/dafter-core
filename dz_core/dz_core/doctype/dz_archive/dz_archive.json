@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:ARCH-{YYYY}-{#####}",
+ "creation": "2026-10-22 10:00:00.000000",
+ "description": "Fichiers conservés avec leur empreinte SHA-256 (décret 09-110, art. 19 à 21 ; conservation 10 ans, art. 64 CPF).",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "kind",
+  "fiscal_year",
+  "draft",
+  "column_break_main",
+  "from_date",
+  "to_date",
+  "register_hash",
+  "files_section",
+  "files"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Société",
+   "options": "Company",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Export des écritures\nArchive annuelle\nDossier de clôture",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "fiscal_year",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Exercice",
+   "options": "Fiscal Year",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Fait alors que des contrôles de clôture n'étaient pas satisfaits.",
+   "fieldname": "draft",
+   "fieldtype": "Check",
+   "label": "Brouillon",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Du",
+   "read_only": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Au",
+   "read_only": 1
+  },
+  {
+   "description": "SHA-256 du registre des empreintes.",
+   "fieldname": "register_hash",
+   "fieldtype": "Data",
+   "label": "Empreinte du registre",
+   "read_only": 1
+  },
+  {
+   "fieldname": "files_section",
+   "fieldtype": "Section Break",
+   "label": "Fichiers"
+  },
+  {
+   "fieldname": "files",
+   "fieldtype": "Table",
+   "label": "Fichiers",
+   "options": "DZ Archive File",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-22 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "DZ Core",
+ "name": "DZ Archive",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

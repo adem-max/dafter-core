@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 dz_core.patches.keep_all_features_on_existing_sites
 dz_core.patches.scf_default_accounts
+dz_core.patches.scf_setup #2026-10-22 opening account 479 made where missing

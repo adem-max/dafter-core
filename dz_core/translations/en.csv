@@ -46,3 +46,21 @@ En stock,In stock
 Seuil,Reorder level
 "Le chiffre d'affaires HT des factures validées, mois par mois.","Sales excluding tax of submitted invoices, month by month."
 Aucune matière sous son seuil de réapprovisionnement.,No material under its reorder level.
+Cloture du mois,Month-end close
+Aide G50,G50 helper
+Export des ecritures,Entry export
+Fichier des écritures,Entries file
+Fichiers conservés,Files kept
+Exercice comptable,Financial year
+Clôturer l'exercice,Close the year
+Geler l'exercice,Freeze the year
+Dossier de clôture,Closing file
+Archive annuelle,Yearly archive
+Registre des ventes,Sales register
+Registre des achats,Purchases register
+Registre des recettes,Receipts register
+Aide G12,G12 helper
+Comptabiliser l'IFU,Book the IFU
+Reverser la TVA sur pertes et dons,Give back the TVA on losses and gifts
+Motif de la sortie,Reason for the issue
+Sans facture (justificatif interne),No invoice (internal voucher)
