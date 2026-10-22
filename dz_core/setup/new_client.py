@@ -33,7 +33,7 @@ from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU
 from dz_core.setup.accounts import opening_account
 from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import apply_sector
-from dz_core.setup.tax import IFU_NOTE, apply_tax_regime
+from dz_core.setup.tax import NOTES, apply_tax_regime
 
 CHART_OF_ACCOUNTS = "Algerie - Plan Comptable General 2 avec code"
 
@@ -52,8 +52,8 @@ def prepare(company, abbr, sector, tax_regime=IFU):
 
 	settings = frappe.get_doc("DZ Core Settings")
 	settings.update({"company": company, "sector": sector, "tax_regime": tax_regime, **warehouses})
-	if tax_regime == IFU and not settings.invoice_note:
-		settings.invoice_note = IFU_NOTE
+	if tax_regime in NOTES and not settings.invoice_note:
+		settings.invoice_note = NOTES[tax_regime]
 	settings.save(ignore_permissions=True)
 	# Chart, default accounts, settings, accounts per item group, before any entry
 	apply_scf_setup(company, sector)

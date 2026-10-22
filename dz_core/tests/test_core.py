@@ -13,7 +13,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import random_string, today
 
-from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU, REEL
+from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import AUTO, IFU, REEL
 from dz_core.imports.workbook import import_workbook, make_template
 from dz_core.setup.new_client import prepare
 from dz_core.setup.sectors import CLOTHING, FOOD, SECTORS, create_item_attributes, create_uoms
@@ -108,6 +108,11 @@ class TestSetup(IntegrationTestCase):
 		# every group of the company carries the standard rate
 		taxes = frappe.get_doc("Item Group", "Produits finis").taxes
 		self.assertIn(f"{STANDARD} - {abbr}", [row.item_tax_template for row in taxes])
+		# an auto-entrepreneur charges no TVA, like the IFU
+		apply_tax_regime(self.company, AUTO)
+		self.assertFalse(
+			frappe.get_all("Sales Taxes and Charges Template", {"company": self.company, "is_default": 1})
+		)
 		apply_tax_regime(self.company, self.settings.tax_regime)
 
 	def test_default_print_formats(self):

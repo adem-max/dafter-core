@@ -39,4 +39,6 @@ def execute(filters=None):
 		rows.append({"line": _("TVA à payer sur le G50 (44551)"), "tva": f.to_pay})
 	if f.settlement:
 		rows.append({"line": _("Liquidation passée : {0}").format(f.settlement)})
+	if f.stamp:
+		rows.append({"line": _("Droit de timbre de quittance du mois (445751, ligne E2E12)"), "tva": f.stamp})
 	return columns, rows

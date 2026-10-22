@@ -22,10 +22,12 @@ def after_migrate():
 
 def setup_all():
 	from dz_core.books.statements import setup_statements
+	from dz_core.stamp import setup_defaults as setup_stamp_defaults
 
 	setup_custom_fields()
 	setup_wilayas()
 	setup_statements()  # the SCF bilan and compte de résultat (books/statements.py)
+	setup_stamp_defaults()  # the payment modes' rows; the stamp duty stays off (stamp.py)
 	# Optional features: old key name, then records to match the list. Apps on
 	# top call apply_features() again after their own setup.
 	move_legacy_key()

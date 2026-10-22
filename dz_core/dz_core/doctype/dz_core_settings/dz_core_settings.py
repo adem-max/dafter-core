@@ -11,6 +11,9 @@ from frappe.model.document import Document
 SECTORS = ("Alimentaire et cosmétique", "Confection")
 IFU = "IFU"
 REEL = "Régime réel"
+AUTO = "Auto-entrepreneur"  # loi 22-23: no TVA, like the IFU (0.5 % of turnover)
+NO_TVA = (IFU, AUTO)
+REGIMES = (IFU, REEL, AUTO)
 
 
 class DZCoreSettings(Document):
@@ -21,6 +24,9 @@ class DZCoreSettings(Document):
 				frappe.throw(
 					_("L'entrepôt {0} n'appartient pas à la société {1}.").format(warehouse, self.company)
 				)
+		from dz_core.stamp import check_settings
+
+		check_settings(self)
 
 
 def get_settings():

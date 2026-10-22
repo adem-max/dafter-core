@@ -116,6 +116,32 @@ SALES_INVOICE_FIELDS = [
 		"allow_on_submit": 1,
 		"print_hide": 1,
 	},
+	# a cheque or a transfer whose references are on the invoice owes no stamp
+	# duty (code du timbre art. 258; dz_core/stamp.py)
+	{
+		"fieldname": "dz_payment_reference",
+		"label": "N° du chèque ou référence du virement",
+		"fieldtype": "Data",
+		"insert_after": "dz_payment_mode",
+		"depends_on": "eval:['Chèque', 'Virement'].includes(doc.dz_payment_mode)",
+		"print_hide": 1,
+	},
+	{
+		"fieldname": "dz_payment_reference_date",
+		"label": "Date du chèque ou du virement",
+		"fieldtype": "Date",
+		"insert_after": "dz_payment_reference",
+		"depends_on": "eval:['Chèque', 'Virement'].includes(doc.dz_payment_mode)",
+		"print_hide": 1,
+	},
+	{
+		"fieldname": "dz_payment_bank",
+		"label": "Banque tirée ou banques du virement",
+		"fieldtype": "Data",
+		"insert_after": "dz_payment_reference_date",
+		"depends_on": "eval:['Chèque', 'Virement'].includes(doc.dz_payment_mode)",
+		"print_hide": 1,
+	},
 ]
 
 

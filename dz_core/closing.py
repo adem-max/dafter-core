@@ -271,6 +271,7 @@ def freeze_month(company, month):
 COLLECTED_19, COLLECTED_9 = "445711", "445712"
 DEDUCTIBLE, DEDUCTIBLE_ASSETS = "44566", "44562"
 CREDIT, PAYABLE = "44568", "44551"
+STAMP_DUTY = "445751"  # droits de timbre de quittance à reverser (stamp.py)
 
 
 def settlement_remark(end):
@@ -318,6 +319,7 @@ def tva_figures(company, month):
 		to_pay=max(result, 0),
 		new_credit=max(-result, 0),
 		settlement=settlement[0] if settlement else None,
+		stamp=-movement(STAMP_DUTY),  # paid on the same G50, line E2E12
 	)
 
 

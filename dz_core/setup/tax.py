@@ -27,11 +27,14 @@ and the turnover report for IFU. The G50 helper is the report "Aide G50".
 
 import frappe
 
-from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import IFU, REEL
+from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import AUTO, IFU, NO_TVA, REEL
 from dz_core.setup.accounts import account_by_number
 
 TEMPLATE_DOCTYPES = ("Sales Taxes and Charges Template", "Purchase Taxes and Charges Template")
 IFU_NOTE = "Contribuable soumis à l'IFU : TVA non facturée."
+AUTO_NOTE = "Auto-entrepreneur : TVA non facturée."
+# the invoice note prepare() writes when none is set (DZ Core Settings, editable)
+NOTES = {IFU: IFU_NOTE, AUTO: AUTO_NOTE}
 
 STANDARD, REDUCED, EXEMPT, ASSETS = "TVA 19 %", "TVA 9 %", "Exonéré", "TVA 19 % immobilisations"
 REDUCED_RATE = 9
@@ -53,7 +56,7 @@ PURCHASE_ROWS = [("44566", "TVA déductible"), ("44562", "TVA déductible sur im
 
 def apply_tax_regime(company, regime):
 	setup_tva(company)
-	if regime == IFU:
+	if regime in NO_TVA:
 		unset_default_templates(company)
 	elif regime == REEL:
 		set_default_templates(company)

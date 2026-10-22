@@ -69,6 +69,9 @@ doc_events = {
 	"Item Group": {"before_insert": "dz_core.setup.item_groups.inherit_parent_accounts"},
 	# a manufacture posts consumption (60x) and production stocked (72) (production.py)
 	"Stock Entry": {"validate": "dz_core.production.production_accounts", **AUDIT},
+	# stamp duty on cash receipts (stamp.py)
+	"Sales Invoice": {"validate": "dz_core.stamp.apply_stamp", **AUDIT},
+	"Payment Entry": {"validate": "dz_core.stamp.warn_cash_payment", **AUDIT},
 	# changes of "Accounts Frozen Till Date" go to the audit trail
 	"Company": {"on_update": "dz_core.books.audit.log_frozen_date"},
 	# archived files stay (books/archive.py)
