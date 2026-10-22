@@ -8,6 +8,7 @@ A table is (title, columns, rows): columns are (label, kind) with kind one of
 """
 
 import io
+import re
 from collections import OrderedDict
 
 import frappe
@@ -412,7 +413,8 @@ def to_xlsx(tables, banner=None):
 	book = Workbook()
 	book.remove(book.active)
 	for t in tables:
-		sheet = book.create_sheet(t.title[:31])
+		# Excel refuses [ ] : * ? / \ in a sheet name, and more than 31 characters
+		sheet = book.create_sheet(re.sub(r"[\[\]:*?/\\]", "-", t.title)[:31])
 		if banner:
 			sheet.append([banner])
 			sheet["A1"].font = Font(bold=True, color="C00000")

@@ -61,6 +61,7 @@ def run(profile="food", full=0):
 			print("Stock d'ouverture...")
 			remove("Stock Reconciliation", {"company": p.COMPANY, "purpose": "Opening Stock"})
 	frappe.db.delete("Repost Item Valuation", {"company": p.COMPANY})
+	forget_books(p.COMPANY)
 	if not full:
 		repost_opening_stock(p.COMPANY)
 	# Batches made by the story (receipts and production); opening batches stay
@@ -85,6 +86,23 @@ def run(profile="food", full=0):
 	print(
 		f"Histoire effacée. Relancez : bench --site <site> execute dz_core.demo.loader.load --kwargs \"{{'profile': '{profile}'}}\""
 	)
+
+
+def forget_books(company):
+	"""The audit trail and the archives of the wiped story: on a client site
+	neither is ever deleted (books/audit.py, books/archive.py), a demo starts
+	again from nothing."""
+	frappe.flags.dz_wipe = True
+	try:
+		frappe.db.delete("DZ Audit Log", {"company": company})
+		for name in frappe.get_all("DZ Archive", filters={"company": company}, pluck="name"):
+			for file in frappe.get_all(
+				"File", filters={"attached_to_doctype": "DZ Archive", "attached_to_name": name}, pluck="name"
+			):
+				frappe.delete_doc("File", file, force=True, ignore_permissions=True)
+			frappe.delete_doc("DZ Archive", name, force=True, ignore_permissions=True)
+	finally:
+		frappe.flags.dz_wipe = False
 
 
 @contextmanager

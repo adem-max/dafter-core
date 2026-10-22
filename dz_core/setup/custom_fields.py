@@ -144,6 +144,33 @@ SALES_INVOICE_FIELDS = [
 	},
 ]
 
+# A purchase without an invoice (informal supplier): recorded, never with TVA,
+# listed as likely non-deductible (dz_core/tax_checks.py)
+PURCHASE_INVOICE_FIELDS = [
+	{
+		"fieldname": "dz_no_invoice",
+		"label": "Sans facture (justificatif interne)",
+		"fieldtype": "Check",
+		"insert_after": "bill_date",
+		"description": "Achat sans facture du fournisseur : bon d'achat interne signé par le vendeur. "
+		"Pas de TVA déductible ; la charge est probablement non déductible.",
+	},
+]
+
+# Why stock went out without a sale: losses and gifts give back their TVA on
+# the régime réel (CTCA arts. 37-a, 41-5; dz_core/tax_checks.py)
+STOCK_ENTRY_FIELDS = [
+	{
+		"fieldname": "dz_issue_reason",
+		"label": "Motif de la sortie",
+		"fieldtype": "Select",
+		"options": "\nCasse ou vol\nÉchantillons et cadeaux\nDestruction\nForce majeure",
+		"insert_after": "stock_entry_type",
+		"depends_on": "eval:doc.stock_entry_type == 'Material Issue'",
+		"allow_on_submit": 1,
+	},
+]
+
 
 def setup_custom_fields():
 	"""Create or update all custom fields. Safe to run many times."""
@@ -152,6 +179,8 @@ def setup_custom_fields():
 			"Company": COMPANY_FIELDS,
 			"Customer": CUSTOMER_FIELDS,
 			"Sales Invoice": SALES_INVOICE_FIELDS,
+			"Purchase Invoice": PURCHASE_INVOICE_FIELDS,
+			"Stock Entry": STOCK_ENTRY_FIELDS,
 		},
 		update=True,
 	)

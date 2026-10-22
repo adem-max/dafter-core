@@ -112,10 +112,17 @@ def demo_accounting(company, sector):
 	difference: no immutable ledger. A demo is wiped and replayed, and an
 	immutable ledger would leave each wiped document's lines in its month and
 	their reversal on the day of the wipe. Returns the set-up's log."""
+	from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import REEL
 	from dz_core.setup.scf import apply_scf_setup
 
 	log = apply_scf_setup(company, sector)
 	frappe.db.set_single_value("Accounts Settings", "enable_immutable_ledger", 0)
+	# a régime réel demo shows the stamp duty on its cash invoices (stamp.py)
+	settings = frappe.get_single("DZ Core Settings")
+	if settings.company == company and settings.tax_regime == REEL and not settings.stamp_duty:
+		settings.stamp_duty = 1
+		settings.save(ignore_permissions=True)
+		log.append("stamp duty on")
 	return log
 
 

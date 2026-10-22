@@ -35,5 +35,24 @@ frappe.query_reports["Aide G50"] = {
 					})
 			);
 		});
+		report.page.add_inner_button(__("Reverser la TVA sur pertes et dons"), () => {
+			const filters = report.get_values();
+			frappe.confirm(
+				__("Reverser la TVA des sorties pour perte, vol ou don du mois ?"),
+				() =>
+					frappe
+						.xcall("dz_core.tax_checks.make_tva_reversal", {
+							company: filters.company,
+							month: filters.month,
+						})
+						.then((name) => {
+							frappe.show_alert({
+								message: __("Écriture {0} passée", [name]),
+								indicator: "green",
+							});
+							report.refresh();
+						})
+			);
+		});
 	},
 };

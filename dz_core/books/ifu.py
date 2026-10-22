@@ -128,7 +128,7 @@ def figures_table(f):
 		]
 	)
 	return table(
-		_("IFU : chiffre d'affaires (G12)"),
+		_("IFU, chiffre d'affaires (G12)"),
 		[(_("Mois"), TEXT), (_("Ventes de biens"), AMOUNT), (_("Services"), AMOUNT), (_("Total"), AMOUNT)],
 		lines,
 	)

@@ -20,11 +20,12 @@ from frappe.utils import flt, getdate
 from dz_core.books.archive import CLOSING_FILE, YEARLY
 from dz_core.books.tables import stock_gap
 from dz_core.closing import OK, closing_rows, row
+from dz_core.tax_checks import informal_purchases
 
 # checks that must be OK before the year is closed (accounts that must be
 # empty, production, stock) and, with the rest of the close, before the file
 BLOCK_CLOSING = {"6589", "4781", "476", "479", "72", "stock"}
-NOT_FOR_THE_FILE = {"4081", "frozen", "result", "closed", "closing_file", "archive", "deadline"}
+NOT_FOR_THE_FILE = {"4081", "frozen", "result", "closed", "closing_file", "archive", "deadline", "informal"}
 PROFIT, LOSS = "120", "129"
 
 
@@ -86,6 +87,16 @@ def year_checks(company, fiscal_year):
 			code="stock",
 		)
 	)
+	informal = informal_purchases(company, start, end)
+	if informal:
+		rows.append(
+			row(
+				_("Achats sans facture de l'exercice (probablement non déductibles)"),
+				informal,
+				True,
+				code="informal",
+			)
+		)
 	result = year_result(company, start, end)
 	rows.append(
 		row(

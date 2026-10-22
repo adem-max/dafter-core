@@ -10,11 +10,13 @@ from frappe import _
 
 from dz_core.closing import tva_figures
 from dz_core.reports import get_company
+from dz_core.tax_checks import tva_reversal_entry, tva_reversal_lines
 
 
 def execute(filters=None):
 	filters = filters or {}
-	f = tva_figures(get_company(filters), filters.get("month"))
+	company = get_company(filters)
+	f = tva_figures(company, filters.get("month"))
 	columns = [
 		{"fieldname": "line", "label": _("Ligne"), "fieldtype": "Data", "width": 420},
 		{"fieldname": "base", "label": _("Base HT"), "fieldtype": "Currency", "width": 150},
@@ -39,6 +41,17 @@ def execute(filters=None):
 		rows.append({"line": _("TVA à payer sur le G50 (44551)"), "tva": f.to_pay})
 	if f.settlement:
 		rows.append({"line": _("Liquidation passée : {0}").format(f.settlement)})
+	reversal = tva_reversal_lines(company, f.start, f.end)
+	if reversal:
+		done = tva_reversal_entry(company, f.end)
+		rows.append(
+			{
+				"line": _("TVA à reverser sur pertes, vols et dons du mois (art. 37-a, 41-5 CTCA)")
+				+ (f" : {done}" if done else ""),
+				"base": sum(line[3] for line in reversal),
+				"tva": sum(line[5] for line in reversal),
+			}
+		)
 	if f.stamp:
 		rows.append({"line": _("Droit de timbre de quittance du mois (445751, ligne E2E12)"), "tva": f.stamp})
 	return columns, rows
