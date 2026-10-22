@@ -12,6 +12,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, flt, get_first_day, get_last_day, getdate
 
+from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import REEL
+
 OK, TO_CHECK = "OK", "À voir"
 
 # Accounts that must be empty at every month end: (number, what to do)
@@ -172,6 +174,8 @@ def closing_rows(company, month):
 	for method in frappe.get_hooks("dz_closing_checks"):
 		rows += frappe.get_attr(method)(company, start, end)
 
+	rows += deadline_rows(company, end)
+
 	frozen = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
 	rows.append(
 		row(
@@ -184,6 +188,29 @@ def closing_rows(company, month):
 		)
 	)
 	return rows
+
+
+def deadline_rows(company, end):
+	"""The tax returns the month's close leads to (information, always OK)."""
+	settings = frappe.get_cached_doc("DZ Core Settings")
+	if settings.company != company:
+		return []
+	following = add_days(end, 1)
+	if settings.tax_regime == REEL:
+		texts = [
+			_("Échéance : G50 de {0} à déposer et payer avant le 20/{1} (TVA, droit de timbre)").format(
+				end.strftime("%m/%Y"), following.strftime("%m/%Y")
+			)
+		]
+	else:
+		texts = []
+		if end.month <= 6:
+			texts.append(_("Échéance : G12 prévisionnel {0} avant le 30/06/{0} (Aide G12)").format(end.year))
+		if end.month == 12:
+			texts.append(
+				_("Échéance : G12 bis {0} avant le 20/01/{1} (Aide G12)").format(end.year, end.year + 1)
+			)
+	return [row(text, 0, True, code="deadline") for text in texts]
 
 
 def srbnb_debits(company, until):

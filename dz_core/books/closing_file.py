@@ -45,11 +45,11 @@ def checks_table(rows):
 
 def tax_tables(company, start, end):
 	"""TVA per month on the régime réel; the IFU figures otherwise (Aide G12)."""
+	from dz_core.books.ifu import ifu_table
+
 	if regime(company) == REEL:
 		return [tables.tva_by_month(company, start, end)]
-	for method in frappe.get_hooks("dz_ifu_tables"):
-		return [frappe.get_attr(method)(company, start, end)]
-	return []
+	return [ifu_table(company, start, end)]
 
 
 @frappe.whitelist()
