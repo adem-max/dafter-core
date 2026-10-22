@@ -21,8 +21,11 @@ def after_migrate():
 
 
 def setup_all():
+	from dz_core.books.statements import setup_statements
+
 	setup_custom_fields()
 	setup_wilayas()
+	setup_statements()  # the SCF bilan and compte de résultat (books/statements.py)
 	# Optional features: old key name, then records to match the list. Apps on
 	# top call apply_features() again after their own setup.
 	move_legacy_key()

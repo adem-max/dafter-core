@@ -89,6 +89,105 @@ def verify(archive):
 	return result
 
 
+@frappe.whitelist()
+def make_archive(company, fiscal_year):
+	"""The yearly archive of a frozen year: the entry export, the books
+	(balance générale, grand livre, journal centralisateur) in Excel, the SCF
+	statements and the balance in PDF, the year's audit trail; each with its
+	SHA-256 in the register."""
+	from dz_core.books import tables
+	from dz_core.books.export import entry_files, entry_rows
+	from dz_core.books.statements import BALANCE_SHEET, INCOME_STATEMENT
+	from dz_core.books.year_end import year_bounds
+
+	frappe.has_permission("DZ Archive", "read", throw=True)
+	frappe.has_permission("GL Entry", "read", throw=True)
+	start, end = year_bounds(fiscal_year)
+	frozen = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
+	if not frozen or frappe.utils.getdate(frozen) < end:
+		frappe.throw(_("Gelez d'abord l'exercice jusqu'au {0}.").format(frappe.format(end, "Date")))
+	entries = entry_rows(company, start, end)
+	books = [
+		tables.trial_balance(company, start, end),
+		tables.general_ledger(company, start, end, entries),
+		tables.centralising_journal(company, start, end, entries),
+	]
+	statements = [
+		tables.statement_table(company, INCOME_STATEMENT, start, end),
+		tables.statement_table(company, BALANCE_SHEET, start, end),
+		books[0],
+	]
+	heading = _("{0} - exercice {1}").format(company, fiscal_year)
+	files = entry_files(company, start, end, entries)
+	files += [
+		(
+			f"livres-{fiscal_year}.xlsx",
+			tables.to_xlsx(books),
+			_("Balance, grand livre, journal centralisateur"),
+		),
+		(
+			f"etats-{fiscal_year}.pdf",
+			tables.to_pdf(statements, heading),
+			_("États financiers SCF et balance"),
+		),
+		(
+			f"journal-audit-{fiscal_year}.csv",
+			tables.to_csv(audit_table(company, start, end)),
+			_("Journal d'audit"),
+		),
+	]
+	archive = keep(company, YEARLY, files, start, end, fiscal_year=fiscal_year)
+	return archive.name
+
+
+def audit_table(company, start, end):
+	from dz_core.books.tables import DATE, TEXT, table
+
+	rows = frappe.get_all(
+		"DZ Audit Log",
+		filters={"creation": ["between", [f"{start} 00:00:00", f"{end} 23:59:59"]]},
+		fields=[
+			"creation",
+			"operation",
+			"reference_doctype",
+			"reference_name",
+			"user",
+			"ip_address",
+			"device",
+			"details",
+			"company",
+		],
+		order_by="creation",
+	)
+	return table(
+		_("Journal d'audit"),
+		[
+			(_("Date et heure"), DATE),
+			(_("Opération"), TEXT),
+			(_("Type"), TEXT),
+			(_("Document"), TEXT),
+			(_("Utilisateur"), TEXT),
+			(_("Adresse IP"), TEXT),
+			(_("Poste"), TEXT),
+			(_("Détails"), TEXT),
+		],
+		[
+			[
+				r.creation,
+				r.operation,
+				r.reference_doctype,
+				r.reference_name,
+				r.user,
+				r.ip_address,
+				r.device,
+				r.details,
+			]
+			for r in rows
+			if not r.company or r.company == company
+		],
+	)
+
+
 def protect_file(doc, method=None):
 	"""File on_trash (hooks.py): an archived file stays."""
 	if doc.attached_to_doctype == "DZ Archive" and not frappe.flags.dz_wipe:

@@ -97,13 +97,15 @@ def opening_vouchers(company):
 	)
 
 
-def row(check, amount, ok, todo="", action=None):
+def row(check, amount, ok, todo="", action=None, code=None):
+	"""One check. `code` names the checks the year end relies on (books/year_end.py)."""
 	return {
 		"check": check,
 		"amount": flt(amount, 2),
 		"status": OK if ok else TO_CHECK,
 		"todo": "" if ok else todo,
 		"action": action,
+		"code": code,
 	}
 
 
@@ -123,7 +125,13 @@ def closing_rows(company, month):
 			amount = balance(company, accounts, end)
 			label = frappe.db.get_value("Account", accounts[0], "account_name")
 			rows.append(
-				row(_("{0} {1} : solde nul").format(number, label), amount, abs(amount) < 0.01, _(todo))
+				row(
+					_("{0} {1} : solde nul").format(number, label),
+					amount,
+					abs(amount) < 0.01,
+					_(todo),
+					code=number,
+				)
 			)
 
 	debits = srbnb_debits(company, end)
@@ -134,6 +142,7 @@ def closing_rows(company, month):
 			not debits or bool(srbnb_reclassification(company, end)),
 			_("Reclassez ces soldes débiteurs au 4097 (écriture extournée le 1er du mois suivant)."),
 			action="reclassify_srbnb",
+			code=SRBNB,
 		)
 	)
 
@@ -156,6 +165,7 @@ def closing_rows(company, month):
 			_(
 				"Un mouvement de produits finis ou d'en-cours n'est pas passé par le 72 : voyez avec le comptable."
 			),
+			code=PRODUCTION,
 		)
 	)
 
@@ -170,6 +180,7 @@ def closing_rows(company, month):
 			bool(frozen) and getdate(frozen) >= end,
 			_("Une fois les contrôles faits, gelez le mois."),
 			action="freeze_month",
+			code="frozen",
 		)
 	)
 	return rows
