@@ -20,7 +20,10 @@ Pack Atelier + Vente en ligne = a site with `dz_core` and `dz_cod`.
 | --- | --- | --- |
 | New client setup | `dz_core/setup/new_client.py` | Setup wizard (French, Algeria, DZD, Algerian chart of accounts), sector template, tax regime, DZ Core Settings |
 | Sector templates | `dz_core/setup/sectors.py` | Item groups, units, size and colour attributes, 3 warehouses, manufacturing defaults. One dict per sector |
-| Tax regime | `dz_core/setup/tax.py` | IFU: no TVA by default. Régime réel: 19 % default plus a 9 % template |
+| Tax regime | `dz_core/setup/tax.py` | IFU and auto-entrepreneur: no TVA. Régime réel: TVA per rate (19 %, 9 %, exempt) through Item Tax Templates; reports "Aide G50" (réel) and "Aide G12" (IFU, auto-entrepreneur) |
+| Stamp duty | `dz_core/stamp.py` | Droit de timbre on cash receipts (circular 14/2025 scale), per payment mode, off until the client's accountant agrees |
+| Books and compliance | `dz_core/books/`, `docs/COMPLIANCE.md` | Journals, entry export (FEC layout) with hashes, audit trail (DZ Audit Log), SCF bilan and compte de résultat, year-end close, accountant's closing file, yearly archive (DZ Archive); sales and purchases registers; reports "Clôture du mois", "Exercice comptable", "Export des écritures" |
+| Opening balances | `dz_core/imports/opening.py` | The accountant's closing trial balance and open invoices, through 479, which must end at zero |
 | Legal mentions | `dz_core/setup/custom_fields.py` | Company: legal form, activity, RC or AE card, NIF, NIS, AI, capital. Customer: RC, NIF, NIS, AI. Invoice: payment method |
 | Print formats | `dz_core/dz_core/print_format/` | "Facture DZ" (Sales Invoice) and "Bon de livraison DZ" (Delivery Note) |
 | Import workbook | `dz_core/imports/workbook.py` | One Excel file: suppliers, customers, items, clothing models, BOMs, opening stock |
@@ -93,8 +96,8 @@ dz_hub), the tools, every file and the lines that matter in it.
 
 ## Not done yet (full plan: ROADMAP.md)
 
-- Stamp duty on cash payments, G50 helper, IFU turnover report: waiting for the accountant's rules
-- Invoice legal mentions: checked against decree 05-468, still to be validated by an accountant
+- The accountant's validation: invoice mentions (decree 05-468), the SCF statements' layout, the IFU rates, the stamp duty on cash-on-delivery (switched off until then)
+- The 2027 publisher's commitment: a draft (`docs/ENGAGEMENT-EDITEUR.md`) until the arrêtés are published
 - Translations: only the wilaya and contact labels have English and Arabic so far (`dz_core/translations/`)
 
 The split with dz_cod is finished: `docs/SPLIT.md` lists what moved here, what
@@ -104,7 +107,7 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 83 tests (13 unit + 70 integration)
+bench --site test.localhost run-tests --app dz_core     # 110 tests (15 unit + 95 integration)
 ```
 
 The suite also passes on a site with ERPNext and dz_core only (the dev bench

@@ -201,8 +201,14 @@ def balance_sheet_rows():
 		liability("P101", "Capital émis", "101", "108", "109"),
 		liability("P104", "Primes et réserves", "103", "104", "106"),
 		liability("P105", "Écarts de réévaluation et d'équivalence", "105", "107"),
-		liability("P12", "Résultat net (exercices clôturés)", "12"),
-		accounts("PRES", "Résultat de l'exercice en cours", of_roots(*PL), reverse=1),
+		liability("P12", "Résultat net (exercices clôturés, à affecter)", "12"),
+		{
+			"reference_code": "PRES",
+			"display_name": "Résultat de l'exercice en cours",
+			"data_source": "Custom API",
+			"calculation_formula": "dz_core.books.statements.result_not_closed",
+			"indentation_level": 1,
+		},
 		liability("P11", "Report à nouveau", "11"),
 		accounts("PEX", "Autres capitaux propres (non classés)", unnumbered(EQUITY), reverse=1, hide_empty=1),
 		total("CP", "Total capitaux propres", "P101 + P104 + P105 + P12 + PRES + P11 + PEX"),
@@ -221,6 +227,37 @@ def balance_sheet_rows():
 		total("PC", "Total passifs courants", "P40 + P44 + P4X + P519 + PX"),
 		total("TP", "TOTAL GÉNÉRAL PASSIF", "CP + PNC + PC"),
 	]
+
+
+@frappe.whitelist(methods=["GET"])
+def result_not_closed(filters=None, periods=None, row=None):
+	"""Bilan row PRES: per period, income minus expenses not yet closed into
+	120 / 129, i.e. after the last Period Closing Voucher up to the period's
+	end. Not an account row: ERPNext's engine leaves out a closing voucher's
+	reversal of classes 6 and 7 (it keeps only its 12x line), so classes 6
+	and 7 would still carry closed years and the result would count twice."""
+	filters = frappe._dict(frappe.parse_json(filters) if isinstance(filters, str) else filters or {})
+	values = []
+	for period in periods or []:
+		closed = frappe.db.get_value(
+			"Period Closing Voucher",
+			{"company": filters.company, "docstatus": 1, "period_end_date": ["<=", period["to_date"]]},
+			"period_end_date",
+			order_by="period_end_date desc",
+		)
+		values.append(
+			flt(
+				frappe.db.sql(
+					"""SELECT SUM(gle.credit - gle.debit) FROM `tabGL Entry` gle
+					JOIN `tabAccount` acc ON acc.name = gle.account
+					WHERE gle.company = %s AND gle.is_cancelled = 0 AND acc.root_type IN ('Income', 'Expense')
+						AND gle.voucher_type != 'Period Closing Voucher'
+						AND gle.posting_date <= %s AND gle.posting_date > %s""",
+					(filters.company, period["to_date"], closed or "1900-01-01"),
+				)[0][0]
+			)
+		)
+	return values
 
 
 TEMPLATES = {

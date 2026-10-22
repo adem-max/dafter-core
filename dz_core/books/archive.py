@@ -82,10 +82,10 @@ def verify(archive):
 	doc.check_permission("read")
 	result = []
 	for row in doc.files:
-		content = frappe.get_doc("File", {"file_url": row.file, "attached_to_name": doc.name}).get_content()
-		if isinstance(content, str):
-			content = content.encode("utf-8")
-		result.append([row.file_name, sha256(content) == row.sha256])
+		# the bytes on disk: File.get_content() decodes text files (and drops a BOM)
+		path = frappe.get_doc("File", {"file_url": row.file, "attached_to_name": doc.name}).get_full_path()
+		with open(path, "rb") as stored:
+			result.append([row.file_name, sha256(stored.read()) == row.sha256])
 	return result
 
 

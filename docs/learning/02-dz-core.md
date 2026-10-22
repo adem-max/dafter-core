@@ -184,8 +184,29 @@ def apply_tax_regime(company, regime):
 
 `template_with_rate(doctype, company, rate)` finds a template whose only
 rate is `rate`. `IFU_NOTE = "Contribuable soumis à l'IFU : TVA non facturée."`
-(editable in DZ Core Settings). Not built, waiting for the accountant: stamp
-duty on cash, G50 helper, IFU turnover report.
+(editable in DZ Core Settings), `AUTO_NOTE` for an auto-entrepreneur (0.4.0,
+no TVA either). The stamp duty is `stamp.py`, the G50 and G12 helpers are in
+`closing.py` and `books/ifu.py` (below).
+
+## books/ (0.4.0, 22 October 2026): the books as the law and the accountant want them
+
+docs/COMPLIANCE.md maps decree 09-110 article by article.
+
+| Module | What |
+| --- | --- |
+| `journals.py` | each ledger line's journal (VE, AC, CA, BQ, ST, OD, AN) from its voucher, computed, never stored |
+| `export.py` | the entry export of a period in the FEC layout, à-nouveaux on a year's first day; report "Export des écritures" |
+| `audit.py` | DZ Audit Log: user, IP, browser on every validation, cancellation, change after validation, freeze-date change |
+| `archive.py` | DZ Archive: files kept with their SHA-256 and a `sha256sum` register; `make_archive` for a frozen year |
+| `tables.py` | balance générale, grand livre, centralising journal, aged balances, stock statement, asset register, TVA per month; Excel, PDF and CSV writers |
+| `statements.py` | the SCF compte de résultat and bilan as ERPNext 16 Financial Report Templates, set up on every migrate |
+| `year_end.py` | report "Exercice comptable": year-end checks, closing (Stock Closing Entry, then the Period Closing Voucher into 120 / 129), freezing |
+| `closing_file.py` | the accountant's "Dossier de clôture" |
+| `registers.py`, `ifu.py` | sales and purchases registers; "Aide G12" and the IFU entry |
+
+Also 0.4.0: `stamp.py` (stamp duty), `tax_checks.py` (60,000 DA items,
+purchases without an invoice, 1 M DA cash, TVA on losses and gifts),
+`imports/opening.py` (opening from the trial balance).
 
 ## setup/scf.py and its parts (the SCF set-up, 21 October 2026)
 

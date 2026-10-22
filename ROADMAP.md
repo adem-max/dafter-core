@@ -29,11 +29,14 @@ Goal: you can set up a client and show it, without help.
 
 - [x] **SCF set-up** (0.3.0, 21 Oct 2026, from the advice doc "Daftar: SCF default accounts and compliance advice"): chart changes, default accounts, inventory accounts per item group, immutable ledger, no deletion of accounting documents, TVA per rate with the "Aide G50" report, the "Clôture du mois" report; COD parcels held at "Chez transporteur" until delivery, invoices paid into each courier's account 4671n, the delivery fee taxed like the goods.
   Done when: the three suites pass locally and on GitHub, and the three demos are reloaded on it.
-  Still open (the doc's section 9): the expert-comptable's and the tax office's answers; Phase 4 (stamp duty, IFU registers, entry export and archive, SCF statements, closing file, opening import, the 2027 publisher commitment).
+  Still open (the doc's section 9): the expert-comptable's and the tax office's answers.
+- [x] **Compliance and outputs** (0.4.0, 22 Oct 2026, Phase 4 of the advice doc; docs/COMPLIANCE.md): journals, entry export with hashes, audit trail, SCF statements, year-end close, closing file, yearly archive, opening from the trial balance; stamp duty (off), auto-entrepreneur regime, registers, Aide G12, tax warnings, TVA on losses and gifts; the draft publisher's commitment and the procedures manual.
+  Done when: the three suites pass locally and on GitHub, and the three demos are reloaded on it.
+  Still open: the accountant's validation of the statements, the IFU rates and the stamp duty; the arrêtés of the 2027 rules.
 - [x] **Review of 20 Oct 2026** (REVIEW-2026-10-20.md in the workspace). Section 1 (bugs) fixed and merged 20 Oct; section 2 (structure) done 21 Oct and released as **0.2.0** in the three repos: CI on every push, version check between the apps, optional features off by default, direct sales next to COD, COD orders invoiced at Livrée and Versements booked, lots in COD shipping, communes and stop desks per courier.
   Done when: the three suites pass locally and on GitHub, and the dev sites are migrated.
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 83 dz_core, 121 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
+  Done when: 110 dz_core, 121 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
   (GitHub's CI already does this on every push since 20 Oct: `.github/workflows/ci.yml`.)
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
@@ -86,11 +89,11 @@ Goal: a first pilot can go live on the VPS.
   Done when: answers are written in DECISIONS.md.
 - [ ] (A) **Invoice mentions validated.** Apply the accountant's corrections to Facture DZ and the IFU note.
   Done when: the accountant has seen a printed invoice and said yes.
-- [ ] (A) **Stamp duty on cash payments.** Configurable scale (DGI circular 14/MF/DGI/LF.2025), applied only when the payment mode is Espèces.
+- [ ] (A) **Stamp duty on cash payments.** Built in 0.4.0 (`stamp.py`), switched off: switch it on per client once the accountant agrees.
   Done when: a cash invoice gets the right duty for 3 amounts the accountant gives, and a BaridiMob invoice gets none.
-- [ ] (A) **IFU turnover report.** Monthly and yearly turnover, ready for the declaration.
+- [ ] (A) **IFU turnover report.** Built in 0.4.0 ("Aide G12", registers).
   Done when: the accountant says it is what they need.
-- [ ] (A) **G50 helper report** (régime réel only). TVA collected and paid per month, exportable to Excel.
+- [ ] (A) **G50 helper report** (régime réel only). Built in 0.3.0 ("Aide G50"), with the stamp duty and the TVA on losses in 0.4.0.
   Done when: the accountant checks it against a real month.
 - [ ] (A) **Default stock accounts.** Fix the inventory and stock adjustment accounts the Algerian chart maps by default.
   Done when: a purchase receipt posts to the class 3 stock account the accountant chose.

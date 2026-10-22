@@ -145,11 +145,43 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   before, and the amount to pay on the G50 (44551) or the new credit (44568);
   a button posts the settlement entry, once per month. A help, not the
   declaration.
-- **Not built, waiting for the tax office:** stamp duty on cash payments
-  (scale known, circular 14/MF/DGI/LF.2025, but its application to COD is
-  open), the IFU turnover report and registers, and the exact wording of
-  the IFU mention on invoices (`IFU_NOTE` in `tax.py`, editable in DZ Core
-  Settings). The default accounts are below.
+- **Auto-entrepreneur** (22 October 2026, 0.4.0): a third regime, no TVA
+  like the IFU (CTCA art. 64), note "Auto-entrepreneur : TVA non facturée.";
+  turnover counts at delivery ("réalisé", CIDTA art. 282 quater), the
+  payment date shows in the receipts register for the reconciliation.
+- **Stamp duty on cash receipts, built and off** (22 October 2026,
+  `stamp.py`): the circular 14/MF/DGI/LF.2025 scale (nothing up to 300 DA,
+  then per 100 DA band 1 / 1.5 / 2 DA by the bracket of the whole amount, at
+  least 5 DA), on draft sales invoices, per payment mode of DZ Core Settings:
+  added to the invoice (445751, outside the TVA base) or at the seller's
+  charge (445751 and 6457, total unchanged). Cheques and transfers whose
+  references are on the invoice are exempt (art. 258); card and BaridiMob
+  too (art. 258 quinquies). Cash-on-delivery can only be at the seller's
+  charge (the courier collects a fixed amount) and is not in the default
+  table: whether it is due there is the open question for the tax office.
+  The whole switch stays off until the client's accountant agrees; the food
+  demo has it on. A later cash payment of an invoice without it only warns.
+  Aide G50 shows the month's duty (line E2E12).
+- **Registers and Aide G12** (`books/registers.py`, `books/ifu.py`): the
+  sales and purchases registers, printed to copy into the numbered paper
+  books (CPF art. 1: nothing allows keeping them only in software);
+  turnover per month, goods and services (items of ERPNext's "Services"
+  group), the IFU at 5 % / 12 % or 0.5 % for an auto-entrepreneur, written
+  as constants to confirm with the accountant; a button books the IFU
+  (6428 / 4477). "Clôture du mois" reminds the regime's next returns.
+- **Warnings** (`tax_checks.py`): non-stock purchase lines above 60,000 DA
+  HT a unit (CIDTA 141-3, equipment); purchases "Sans facture" (no TVA,
+  totalled at the year end as likely non-deductible; supplier "Fournisseur
+  divers sans facture"); supplier invoices above 1,000,000 DA TTC paid in
+  cash (CTCA art. 30). On the régime réel, Material Issues for loss, theft,
+  destruction or gifts give back their TVA (CTCA arts. 37-a, 41-5): Aide
+  G50 posts the reversal once a month at each item's rate, an approximation
+  (the item's cost times its rate) for the accountant to confirm; own
+  products' reversal goes to 65888, not 7245, so class 72 stays equal to the
+  stock change.
+- **Still waiting for the tax office:** the stamp duty on cash-on-delivery,
+  the exact IFU mention (`IFU_NOTE`, editable in DZ Core Settings), the IFU
+  rates, the craft products at 9 %. The default accounts are below.
 
 ## Chart of accounts and default accounts (21 October 2026)
 
@@ -255,6 +287,55 @@ tax office (doc section 9).
   "Accounts Frozen Till Date").
 - **No production reclassification entry**: each manufacture posts
   materials consumed (60x) and production stocked (72) itself (`production.py`).
+
+## Compliance (22 October 2026)
+
+From the SCF advice (Q6, Q13, Q18 to Q20), released as 0.4.0;
+docs/COMPLIANCE.md maps decree 09-110 article by article.
+
+- **Journals are computed, not stored** (`books/journals.py`): VE, AC, ST by
+  voucher type, CA / BQ for payments and journal entries that move cash
+  (53x) or a bank (51x, 52x, 54x), OD otherwise, AN for opening entries. A
+  stored field would need a migration of every past line and could drift.
+- **The entry export uses the French FEC layout** plus a user column: the
+  Algerian specification (decree 09-110 art. 15, LF 2026) is left to an
+  arrêté not published, and accounting software in Algeria imports FEC
+  files. It exports `is_cancelled = 0` lines: under the immutable ledger
+  that is the original and its reversal (a contre-passation). A fiscal
+  year's first day gets virtual "AN" lines (art. 14).
+- **Our own audit trail, DZ Audit Log**: ERPNext's Activity Log is pruned
+  after 90 days and its Version log has no IP or workstation (art. 18).
+- **Archives are kept with SHA-256 hashes** (DZ Archive, `sha256sum`
+  register): made only by code, never changed, never deleted, nor their
+  files; the demo wipes alone forget them. Ten years (CPF art. 64) through
+  the site's private files and a yearly off-site backup (DEPLOY section 9).
+- **SCF statements as ERPNext 16 Financial Report Templates**, written as
+  data in `books/statements.py` and rewritten on every migrate (never edited
+  by hand). Every account lands in one row, so the net result equals
+  classes 7 - 6 and actif equals passif; the bilan classifies by account,
+  not by sign (the engine cannot split an account). The bilan's "Résultat
+  de l'exercice en cours" counts only income and expenses after the last
+  Period Closing Voucher, computed by Daftar (`result_not_closed`): the
+  engine leaves out a closing voucher's reversal of classes 6 and 7 and
+  keeps its 12x line, so a closed year would count twice (found on a real
+  close, 22 October 2026). Titles say "projet" until an accountant
+  validates them.
+- **Year end in four buttons** (report "Exercice comptable"): close (ERPNext
+  16 wants a completed Stock Closing Entry first, built in the background,
+  then the Period Closing Voucher into 120 or 129 by sign), freeze, the
+  accountant's closing file (refused while a check fails, or a marked
+  draft), the yearly archive (frozen year only). The allocation of the
+  result stays a journal entry after the owners' decision. A year is never
+  closed on a test site: it would block posting in it.
+- **Opening from the trial balance** (`imports/opening.py`): open invoices
+  through ERPNext's Opening Invoice Creation Tool's builder but inserted by
+  us, all or nothing (the tool itself swallows errors), dated the opening
+  day; stock from the import workbook's count; one "Écritures d'à-nouveaux"
+  entry; 479 must end at zero or nothing is posted. Existing fixed assets
+  are entered by hand.
+- **The 2027 commitment is a draft** (docs/ENGAGEMENT-EDITEUR.md) that claims
+  only what the software does, as the advice says; signed by Daftar once a
+  registered entity, revised when the arrêté is published.
 
 ## Invoices
 
