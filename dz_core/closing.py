@@ -245,9 +245,13 @@ def reclassify_srbnb(company, month):
 def freeze_month(company, month):
 	"""No entry may be posted on or before the month end any more (Company
 	"Accounts Frozen Till Date"), except by the roles allowed there."""
+	from dz_core.books.audit import frozen
+
 	frappe.has_permission("Company", "write", doc=company, throw=True)
 	_start, end = month_bounds(month)
+	before = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
 	frappe.db.set_value("Company", company, "accounts_frozen_till_date", end)
+	frozen(company, before, end)
 	return end
 
 

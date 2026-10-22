@@ -41,13 +41,38 @@ after_migrate = "dz_core.setup.install.after_migrate"
 # a `dz_features` hook; dz_core has none of its own yet.
 extend_bootinfo = ["dz_core.features.boot"]
 
-# One format for customer phones (dz_core/phone.py)
+# The audit trail: who validated, cancelled or changed what, from where
+# (books/audit.py, AUDITED there)
+AUDIT = {
+	"on_submit": "dz_core.books.audit.log",
+	"on_cancel": "dz_core.books.audit.log",
+	"on_update_after_submit": "dz_core.books.audit.log",
+}
+AUDITED = [
+	"Sales Invoice",
+	"Purchase Invoice",
+	"Payment Entry",
+	"Journal Entry",
+	"Stock Entry",
+	"Stock Reconciliation",
+	"Delivery Note",
+	"Purchase Receipt",
+	"Landed Cost Voucher",
+	"Period Closing Voucher",
+]
+
 doc_events = {
+	**{doctype: dict(AUDIT) for doctype in AUDITED},
+	# One format for customer phones (dz_core/phone.py)
 	"Customer": {"validate": "dz_core.phone.normalize_customer_phone"},
 	# a new item group gets its parent's accounts (setup/item_groups.py)
 	"Item Group": {"before_insert": "dz_core.setup.item_groups.inherit_parent_accounts"},
 	# a manufacture posts consumption (60x) and production stocked (72) (production.py)
-	"Stock Entry": {"validate": "dz_core.production.production_accounts"},
+	"Stock Entry": {"validate": "dz_core.production.production_accounts", **AUDIT},
+	# changes of "Accounts Frozen Till Date" go to the audit trail
+	"Company": {"on_update": "dz_core.books.audit.log_frozen_date"},
+	# archived files stay (books/archive.py)
+	"File": {"on_trash": "dz_core.books.archive.protect_file"},
 }
 
 # montant() and montant_en_lettres() in print formats (dz_core/utils.py)
