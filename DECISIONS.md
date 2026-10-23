@@ -22,6 +22,14 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   "Daftar" alone is used by a real estate agency, "Daftar DZ" ties the brand
   to Algeria, "Daftar ERP" ties it to one product. Note only: nothing renamed
   yet (app names stay, see above).
+- **Logos** (23 October 2026, chosen from three options each). Sijil: lowercase
+  `sijil` in Inter Bold whose three dots are green squares (#006233), the icon
+  is the ı ȷ pair on an ink tile. Daftar: a spiral school notebook, white line
+  art on a teal tile (#0f5c63), the same tile family as the Atelier and COD
+  marks; "Daftar by Sijil" is its own lockup. The SVGs are in
+  `dz_core/public/images/brand/` (text as outlines, no font needed); rules and
+  sizes in the Daftar design system. Not wired in yet: Atelier stays the app's
+  icon.
 
 - **The split with dz_cod is finished** (19 October 2026, `docs/SPLIT.md`).
   Rule: what every client needs goes here, what only an online seller needs
