@@ -33,7 +33,10 @@ logiciel :
    l'annulation d'un document passe une écriture de contrepassation datée du
    jour de l'annulation et conserve l'écriture d'origine ; aucun utilisateur
    n'a le droit de supprimer une pièce comptable ou de stock, même en
-   brouillon, ni de supprimer les transactions d'une société ;
+   brouillon, ni de supprimer les transactions d'une société (ce droit est
+   retiré de nouveau à chaque mise à jour) ; seul le compte technique
+   « Administrator », réservé à l'éditeur, le peut, et chacune de ses
+   suppressions est inscrite au journal d'audit ;
 2. numérote les pièces dans des séries chronologiques continues, une série
    par type de pièce et par année, sans trou puisque aucune pièce ne peut être
    supprimée (une pièce annulée garde son numéro) ;
@@ -44,10 +47,13 @@ logiciel :
    l'autre ;
 5. permet de geler chaque mois et chaque exercice clos, après quoi aucune
    écriture n'est possible à une date antérieure, sauf pour le rôle que les
-   paramètres comptables y autorisent [aucun / préciser] ;
-6. conserve, pour chaque validation, annulation ou modification après
-   validation, l'utilisateur, la date, l'heure, l'adresse IP et le poste
-   (navigateur) ;
+   paramètres comptables y autorisent [aucun / préciser] ; le gel ne
+   recule pas depuis Daftar ; un utilisateur qui a le droit de modifier la
+   société peut le reculer dans sa fiche, et ce changement est inscrit au
+   journal d'audit ;
+6. conserve, pour chaque validation, annulation, modification après
+   validation ou suppression, l'utilisateur, la date, l'heure, l'adresse IP
+   et le poste (navigateur) ;
 7. produit, sur demande, le fichier des écritures d'une période (format texte
    et tableur), avec son empreinte SHA-256 ;
 8. produit chaque année une archive de l'exercice gelé (écritures, livres,
@@ -73,6 +79,9 @@ d'ERPNext et de Frappe sont publics.
 - Le client reste responsable de l'usage du logiciel : un utilisateur par
   personne, contrôles et gel mensuels, conservation des pièces justificatives
   papier.
+- Les garanties du point 1 tiennent aux droits des utilisateurs dans
+  Daftar : elles ne valent pas contre une intervention directe sur la base
+  de données ou sur le serveur, réservée à l'éditeur et à l'hébergeur.
 
 ## 4. Durée
 

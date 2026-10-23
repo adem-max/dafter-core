@@ -3,8 +3,9 @@ operation), in DZ Audit Log.
 
 ERPNext's Version log keeps who changed a document and when, not from where,
 and its Activity Log is pruned after 90 days. So every validation,
-cancellation and change after validation of the documents listed in hooks.py
-(AUDITED) writes one DZ Audit Log row with the user, the IP address and the browser (User-Agent);
+cancellation, change after validation and deletion of the documents listed in
+hooks.py (AUDITED, and the apps' `dz_no_delete` doctypes that hook in the same
+way) writes one DZ Audit Log row with the user, the IP address and the browser (User-Agent);
 a background job or the console writes "système" as the workstation. So does
 every change of the company's "Accounts Frozen Till Date" (the monthly
 freeze, closing.freeze_month, or the Company form).
@@ -17,16 +18,23 @@ OPERATIONS = {
 	"on_submit": "Validation",
 	"on_cancel": "Annulation",
 	"on_update_after_submit": "Modification après validation",
+	"on_trash": "Suppression",
 }
 FREEZE = "Gel des écritures"
 SYSTEM = "système (tâche de fond ou console)"
 
 
 def log(doc, method=None):
-	"""doc_events on_submit, on_cancel, on_update_after_submit (hooks.py)."""
+	"""doc_events on_submit, on_cancel, on_update_after_submit, on_trash (hooks.py)."""
 	details = ""
 	if method == "on_submit" and doc.get("amended_from"):
 		details = _("Remplace {0}").format(doc.amended_from)
+	if method == "on_trash":
+		# only the Administrator or code that ignores permissions gets here
+		# (setup/permissions.py); the demo wipes forget these rows with the rest
+		details = _("Pièce supprimée ({0})").format(
+			{0: _("brouillon"), 1: _("validée"), 2: _("annulée")}.get(doc.docstatus, doc.docstatus)
+		)
 	write(OPERATIONS.get(method, method), doc.doctype, doc.name, doc.get("company"), details)
 
 

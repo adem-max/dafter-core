@@ -142,3 +142,30 @@ class TestBooks(IntegrationTestCase):
 		self.assertEqual([row.operation for row in operations], ["Validation", "Annulation"])
 		self.assertEqual(operations[0].user, frappe.session.user)
 		self.assertTrue(operations[0].device)
+
+	def test_a_deletion_is_audited(self):
+		"""Only the Administrator may delete (setup/permissions.py): it leaves a trace,
+		and the trace does not block the deletion (hooks.py ignore_links_on_delete).
+		A draft: under the immutable ledger a cancelled entry keeps its ledger lines."""
+		entry = frappe.get_doc(
+			{
+				"doctype": "Journal Entry",
+				"company": self.company,
+				"posting_date": today(),
+				"accounts": [
+					{"account": account_by_number(self.company, "5311"), "debit_in_account_currency": 10},
+					{"account": account_by_number(self.company, "5121"), "credit_in_account_currency": 10},
+				],
+			}
+		).insert()
+		frappe.delete_doc("Journal Entry", entry.name)
+		self.assertFalse(frappe.db.exists("Journal Entry", entry.name))
+		row = frappe.get_all(
+			"DZ Audit Log",
+			filters={"reference_doctype": "Journal Entry", "reference_name": entry.name},
+			fields=["operation", "details"],
+			order_by="creation desc",
+			limit=1,
+		)[0]
+		self.assertEqual(row.operation, "Suppression")
+		self.assertIn("brouillon", row.details)

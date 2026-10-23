@@ -27,12 +27,12 @@ and [MANUEL-PROCEDURES.md](MANUEL-PROCEDURES.md) (procedures manual).
 
 | Article | ERPNext | Daftar |
 | --- | --- | --- |
-| 13, no change after validation | Immutable ledger: a cancel keeps the original lines and adds reversals dated the cancel day | Immutable ledger on, ledger deletion off (0.3.0); no Delete right on accounting and stock documents, drafts included; no "Delete Transactions" (0.3.0); "Clôture du mois" freezes each month; "Exercice comptable" closes and freezes the year |
+| 13, no change after validation | Immutable ledger: a cancel keeps the original lines and adds reversals dated the cancel day | Immutable ledger on, ledger deletion off (0.3.0); no Delete right on the documents that post to the ledgers, drafts included (the audited list in hooks.py, and dz_cod's Versements), taken away again after every migrate; no "Delete Transactions" (0.3.0); only the Administrator can still delete, and the deletion is audited; "Clôture du mois" freezes each month, and the freeze date never moves back from Daftar (the Company form can, audited); "Exercice comptable" closes and freezes the year |
 | 12, journals and monthly summaries | One general ledger, no journals | Each line's journal (VE, AC, CA, BQ, ST, OD, AN) computed from its voucher (`books/journals.py`); the centralising journal per journal and month (`books/tables.py`) |
 | 14, carry-forward | Balance-sheet balances roll on | The entry export starts a fiscal year with "AN" lines: balances of classes 1 to 5, and earlier results not yet closed on 120 / 129 |
 | 15, export | Nothing usable as is | Report "Export des écritures": FEC layout plus the user, cancelled originals and their reversals included; text and Excel files kept with their SHA-256 (`books/export.py`) |
 | 17, users and rights | Users, roles | One user per person (procedures manual); no shared logins |
-| 18, author, workstation, date, operation | Version keeps user and time | DZ Audit Log: user, IP address and browser on every validation, cancellation and change after validation, and on each change of the freeze date (`books/audit.py`); kept, never pruned |
+| 18, author, workstation, date, operation | Version keeps user and time | DZ Audit Log: user, IP address and browser on every validation, cancellation, change after validation and deletion, and on each change of the freeze date (`books/audit.py`); kept, never pruned |
 | 19 to 21, archiving, backups, restore | Site backups | Yearly archive of a frozen year: entry export, books, SCF statements, audit trail, with a `sha256sum` register (DZ Archive, `books/archive.py`); daily off-site backup and a restore test (`scripts/`, DEPLOY.md) |
 | 7 to 9, documentation, commitment | | This file, the procedures manual, the draft commitment |
 

@@ -17,7 +17,7 @@ from dz_core.setup.accounts import COMPANY_ACCOUNTS, account_by_number, item_wis
 from dz_core.setup.chart import CREATE, apply_chart_changes
 from dz_core.setup.item_groups import FINISHED, KINDS, SERVICE_GROUPS, group_has_accounts, set_group_accounts
 from dz_core.setup.parties import SUPPLIER_GROUPS
-from dz_core.setup.permissions import NO_DELETE
+from dz_core.setup.permissions import lock_deletions, no_delete
 from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import SECTORS
 from dz_core.tests.test_core import ensure_prepared
@@ -261,12 +261,40 @@ class TestScfSetup(IntegrationTestCase):
 		self.assertEqual(amounts, {"311": -200, "60111": 200, "35511": 200, "7245": -200})
 
 	def test_accounting_documents_cannot_be_deleted(self):
-		for doctype in NO_DELETE:
-			with self.subTest(doctype=doctype):
-				self.assertFalse(frappe.db.exists("Custom DocPerm", {"parent": doctype, "delete": 1}))
-		self.assertFalse(
-			frappe.db.exists("Custom DocPerm", {"parent": "Transaction Deletion Record", "create": 1})
+		"""Checked as a user who holds every role ERPNext gives these doctypes."""
+		doctypes = no_delete()
+		self.assertTrue(
+			{"Period Closing Voucher", "Landed Cost Voucher", "Subcontracting Receipt"} <= set(doctypes)
 		)
+		self.assertNotIn("Asset", doctypes)  # ERPNext deletes its own draft assets as the user
+		roles = set(frappe.get_all("DocPerm", filters={"parent": ["in", doctypes]}, pluck="role"))
+		roles -= {"Administrator", "Guest", "All"}
+		user = frappe.db.exists("User", "suppression@test.dz") or (
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": "suppression@test.dz",
+					"first_name": "Suppression",
+					"send_welcome_email": 0,
+					"roles": [{"role": role} for role in sorted(roles)],
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
+		for doctype in doctypes:
+			with self.subTest(doctype=doctype):
+				self.assertFalse(frappe.has_permission(doctype, "delete", user=user))
+		self.assertFalse(frappe.has_permission("Transaction Deletion Record", "create", user=user))
+
+	def test_a_delete_right_given_back_by_hand_is_taken_away_again(self):
+		"""lock_deletions() runs after every migrate (setup/install.py)."""
+		from frappe.permissions import update_permission_property
+
+		update_permission_property("Sales Invoice", "Accounts Manager", 0, "delete", 1, validate=False)
+		self.assertTrue(frappe.db.exists("Custom DocPerm", {"parent": "Sales Invoice", "delete": 1}))
+		lock_deletions()
+		self.assertFalse(frappe.db.exists("Custom DocPerm", {"parent": "Sales Invoice", "delete": 1}))
 
 	def test_supplier_groups(self):
 		for group, (payable, advance) in SUPPLIER_GROUPS.items():
