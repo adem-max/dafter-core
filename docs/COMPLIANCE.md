@@ -59,7 +59,9 @@ debit balances reclassified to 4097; class 72 equal to the change in classes 33
 and 35; each courier's 4671n against the parcels it owes for (dz_cod);
 the regime's returns (G50 by the 20th; G12 by 30 June; G12 bis by 20
 January); then "Geler le mois". On the régime réel, "Aide G50": settlement
-entry, the stamp duty, the TVA given back on losses and gifts.
+entry, the stamp duty, the TVA given back on losses and gifts. A month left
+unsettled is taken into the next settlement and shown apart ("Clôture du
+mois" flags it): the accountant says how to declare it.
 
 Yearly (report "Exercice comptable"): the same checks at the year end, the
 stock accounts against the stock ledger, then:
