@@ -4,6 +4,7 @@ Run: bench --site <site> run-tests --module dz_core.tests.test_books
 """
 
 import frappe
+from erpnext.accounts.utils import get_fiscal_year
 from frappe.tests import IntegrationTestCase, UnitTestCase
 from frappe.utils import add_days, flt, get_year_start, getdate, today
 
@@ -119,6 +120,38 @@ class TestBooks(IntegrationTestCase):
 			archive.save()
 		with self.assertRaises(frappe.ValidationError):
 			frappe.delete_doc("DZ Archive", archive.name)
+
+	def test_the_same_export_is_given_back_while_nothing_moved(self):
+		self.journal("5121", "7011", 20)
+		first = export_entries(self.company, today(), today())["archive"]
+		self.assertEqual(export_entries(self.company, today(), today())["archive"], first)
+		self.journal("5121", "7011", 30)
+		self.assertNotEqual(export_entries(self.company, today(), today())["archive"], first)
+
+	def test_an_archive_needs_an_accounts_manager(self):
+		"""Reading the ledger is not enough: an archive is kept ten years, never deleted."""
+		user = frappe.db.exists("User", "lecteur@test.dz") or (
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": "lecteur@test.dz",
+					"first_name": "Lecteur",
+					"send_welcome_email": 0,
+					"roles": [{"role": "Accounts User"}],
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
+		self.assertTrue(frappe.has_permission("GL Entry", "read", user=user))
+		frappe.set_user(user)
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				export_entries(self.company, today(), today())
+			with self.assertRaises(frappe.PermissionError):
+				archives.make_archive(self.company, get_fiscal_year(today(), company=self.company)[0])
+		finally:
+			frappe.set_user("Administrator")
 
 	def test_text_layout(self):
 		rows = entry_rows(self.company, today(), today())

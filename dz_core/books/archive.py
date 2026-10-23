@@ -21,10 +21,43 @@ EXPORT = "Export des écritures"
 YEARLY = "Archive annuelle"
 CLOSING_FILE = "Dossier de clôture"
 REGISTER = "registre-des-empreintes.txt"
+# An archive is kept ten years and never deleted: reading the ledger is not enough to make one
+MAKERS = ("Accounts Manager", "System Manager")
 
 
 def sha256(content):
 	return hashlib.sha256(content).hexdigest()
+
+
+def check_maker():
+	if not set(MAKERS) & set(frappe.get_roles()):
+		frappe.throw(
+			_("Seul un responsable comptable fait une archive : elle est conservée dix ans."),
+			frappe.PermissionError,
+		)
+
+
+def unchanged(company, kind, from_date, to_date, draft=0):
+	"""The last archive of this kind and period when nothing moved in the books
+	since it was made (ledger lines, stock moves, audit trail): asking again
+	gives it back instead of keeping the same files twice."""
+	last = frappe.db.get_value(
+		"DZ Archive",
+		{"company": company, "kind": kind, "from_date": from_date, "to_date": to_date, "draft": draft},
+		["name", "creation"],
+		as_dict=True,
+		order_by="creation desc",
+	)
+	if not last:
+		return None
+	for doctype, field in (
+		("GL Entry", "modified"),
+		("Stock Ledger Entry", "modified"),
+		("DZ Audit Log", "creation"),
+	):
+		if frappe.db.exists(doctype, {"company": company, field: [">", last.creation]}):
+			return None
+	return last.name
 
 
 def keep(company, kind, files, from_date, to_date, fiscal_year=None, draft=0):
@@ -94,18 +127,21 @@ def make_archive(company, fiscal_year):
 	"""The yearly archive of a frozen year: the entry export, the books
 	(balance générale, grand livre, journal centralisateur) in Excel, the SCF
 	statements and the balance in PDF, the year's audit trail; each with its
-	SHA-256 in the register."""
+	SHA-256 in the register. The same archive again while nothing moved."""
 	from dz_core.books import tables
 	from dz_core.books.export import entry_files, entry_rows
 	from dz_core.books.statements import BALANCE_SHEET, INCOME_STATEMENT
 	from dz_core.books.year_end import year_bounds
 
-	frappe.has_permission("DZ Archive", "read", throw=True)
+	check_maker()
 	frappe.has_permission("GL Entry", "read", throw=True)
 	start, end = year_bounds(fiscal_year)
 	frozen = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
 	if not frozen or frappe.utils.getdate(frozen) < end:
 		frappe.throw(_("Gelez d'abord l'exercice jusqu'au {0}.").format(frappe.format(end, "Date")))
+	kept = unchanged(company, YEARLY, start, end)
+	if kept:
+		return kept
 	entries = entry_rows(company, start, end)
 	books = [
 		tables.trial_balance(company, start, end),

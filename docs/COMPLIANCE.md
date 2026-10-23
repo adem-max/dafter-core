@@ -73,6 +73,10 @@ stock accounts against the stock ledger, then:
 4. "Archive annuelle" (needs the frozen year), kept 10 years: never prune
    the site's private files.
 
+The entry export, the closing file and the archive are made by an Accounts
+Manager (or System Manager) only, since an archive is never deleted; asked
+again while nothing moved in the books, they give back the last one.
+
 After the owners' decision, a journal entry allocates 120 / 129 (to 110 /
 119, 106x, 457, or 1018 with the balance of 108 for a sole trader).
 
