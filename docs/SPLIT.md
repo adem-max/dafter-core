@@ -16,7 +16,7 @@ migration patches.
 - Something only an online seller needs (orders, couriers, returns,
   Versements) goes in **dz_cod** (repo dafter-cod).
 - dz_core never imports dz_cod. When dz_core needs something from the app on
-  top, it offers a hook (example: `dz_restore_check_counted`).
+  top, it offers a hook (examples: `dz_restore_check_counted`, `dz_no_delete`).
 
 ## What moved to dz_core
 

@@ -35,6 +35,14 @@ def execute(filters=None):
 		{"line": _("TVA déductible sur immobilisations (44562)"), "tva": -f.deductible_assets},
 		{"line": _("Crédit de TVA du mois précédent (44568)"), "tva": -f.credit_before},
 	]
+	if f.earlier_collected or f.earlier_deductible:
+		# a month left unsettled: the settlement takes it in, the accountant says how to declare it
+		rows.append(
+			{
+				"line": _("Reliquat des mois précédents non liquidé (à voir avec le comptable)"),
+				"tva": f.earlier_collected - f.earlier_deductible,
+			}
+		)
 	if f.new_credit:
 		rows.append({"line": _("Crédit de TVA à reporter (44568)"), "tva": -f.new_credit})
 	else:

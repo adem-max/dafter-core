@@ -171,6 +171,8 @@ def closing_rows(company, month):
 		)
 	)
 
+	rows += tva_rows(company, end)
+
 	for method in frappe.get_hooks("dz_closing_checks"):
 		rows += frappe.get_attr(method)(company, start, end)
 
@@ -185,6 +187,42 @@ def closing_rows(company, month):
 			_("Une fois les contrôles faits, gelez le mois."),
 			action="freeze_month",
 			code="frozen",
+		)
+	)
+	return rows
+
+
+def tva_rows(company, end):
+	"""Régime réel: the month's TVA is settled (Aide G50), and earlier months left nothing."""
+	settings = frappe.get_cached_doc("DZ Core Settings")
+	if settings.company != company or settings.tax_regime != REEL:
+		return []
+	f = tva_figures(company, end)
+	rows = []
+	if abs(f.earlier_collected) >= 0.01 or abs(f.earlier_deductible) >= 0.01:
+		# OK once this month's settlement has taken it in; the accountant still says how to declare it
+		rows.append(
+			row(
+				_("TVA laissée par les mois précédents (reprise dans la liquidation du mois)"),
+				f.earlier_collected - f.earlier_deductible,
+				bool(f.settlement),
+				_(
+					"Un mois n'a pas été liquidé, ou une pièce a été passée après sa liquidation : "
+					"voyez avec le comptable comment la déclarer."
+				),
+				code="tva_earlier",
+			)
+		)
+	moved = rows or any(
+		abs(amount) >= 0.01 for amount in (f.collected_19, f.collected_9, f.deductible, f.deductible_assets)
+	)
+	rows.append(
+		row(
+			_("TVA du mois liquidée (Aide G50)"),
+			0,
+			bool(f.settlement) or not moved,
+			_("Passez la liquidation depuis le rapport Aide G50."),
+			code="tva",
 		)
 	)
 	return rows
@@ -282,12 +320,24 @@ def reclassify_srbnb(company, month):
 @frappe.whitelist()
 def freeze_month(company, month):
 	"""No entry may be posted on or before the month end any more (Company
-	"Accounts Frozen Till Date"), except by the roles allowed there."""
+	"Accounts Frozen Till Date"), except by the roles allowed there.
+
+	The date only moves forward: freezing an older month would reopen the
+	months after it (a closed year too). Unfreezing is a decision for the
+	Company form, where it goes to the audit trail as well."""
 	from dz_core.books.audit import frozen
 
 	frappe.has_permission("Company", "write", doc=company, throw=True)
 	_start, end = month_bounds(month)
 	before = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
+	if before and getdate(before) >= end:
+		if getdate(before) == end:
+			return end
+		frappe.throw(
+			_(
+				"Les écritures sont déjà gelées jusqu'au {0} : geler le {1} rouvrirait les mois qui suivent."
+			).format(frappe.format(before, "Date"), frappe.format(end, "Date"))
+		)
 	frappe.db.set_value("Company", company, "accounts_frozen_till_date", end)
 	frozen(company, before, end)
 	return end
@@ -299,6 +349,7 @@ COLLECTED_19, COLLECTED_9 = "445711", "445712"
 DEDUCTIBLE, DEDUCTIBLE_ASSETS = "44566", "44562"
 CREDIT, PAYABLE = "44568", "44551"
 STAMP_DUTY = "445751"  # droits de timbre de quittance à reverser (stamp.py)
+TVA_ACCOUNTS = (COLLECTED_19, COLLECTED_9, DEDUCTIBLE, DEDUCTIBLE_ASSETS)
 
 
 def settlement_remark(end):
@@ -333,7 +384,23 @@ def tva_figures(company, month):
 	collected_19, collected_9 = -movement(COLLECTED_19), -movement(COLLECTED_9)
 	deductible, deductible_assets = movement(DEDUCTIBLE), movement(DEDUCTIBLE_ASSETS)
 	credit_before = balance(company, accounts_of(company, CREDIT), add_days(start, -1))
-	result = collected_19 + collected_9 - deductible - deductible_assets - max(credit_before, 0)
+	# What earlier months left on the TVA accounts: a month never settled, or
+	# an entry posted after its settlement. Carried into this settlement, so
+	# the accounts end at zero, and shown apart (Aide G50, Clôture du mois).
+	earlier = {
+		number: balance(company, accounts_of(company, number), add_days(start, -1)) for number in TVA_ACCOUNTS
+	}
+	earlier_collected = -earlier[COLLECTED_19] - earlier[COLLECTED_9]
+	earlier_deductible = earlier[DEDUCTIBLE] + earlier[DEDUCTIBLE_ASSETS]
+	result = (
+		collected_19
+		+ collected_9
+		+ earlier_collected
+		- deductible
+		- deductible_assets
+		- earlier_deductible
+		- max(credit_before, 0)
+	)
 	return frappe._dict(
 		start=start,
 		end=end,
@@ -342,6 +409,9 @@ def tva_figures(company, month):
 		collected_9=collected_9,
 		deductible=deductible,
 		deductible_assets=deductible_assets,
+		earlier=earlier,
+		earlier_collected=earlier_collected,
+		earlier_deductible=earlier_deductible,
 		credit_before=max(credit_before, 0),
 		to_pay=max(result, 0),
 		new_credit=max(-result, 0),
@@ -353,8 +423,9 @@ def tva_figures(company, month):
 @frappe.whitelist()
 def make_tva_settlement(company, month):
 	"""The month's TVA settlement entry, dated the month end: the collected
-	TVA against the deductible, the credit carried, and what is to pay on the
-	G50 (44551) or the new credit (44568). Once per month."""
+	TVA against the deductible (with what earlier months left on them), the
+	credit carried, and what is to pay on the G50 (44551) or the new credit
+	(44568). Once per month."""
 	frappe.has_permission("Journal Entry", "create", throw=True)
 	f = tva_figures(company, month)
 	if f.settlement:
@@ -364,10 +435,11 @@ def make_tva_settlement(company, month):
 		return accounts_of(company, number)[0]
 
 	lines = [
-		(COLLECTED_19, f.collected_19),
-		(COLLECTED_9, f.collected_9),
-		(DEDUCTIBLE, -f.deductible),
-		(DEDUCTIBLE_ASSETS, -f.deductible_assets),
+		# each TVA account back to zero: the month's movement and what was left before
+		(COLLECTED_19, f.collected_19 - f.earlier[COLLECTED_19]),
+		(COLLECTED_9, f.collected_9 - f.earlier[COLLECTED_9]),
+		(DEDUCTIBLE, -f.deductible - f.earlier[DEDUCTIBLE]),
+		(DEDUCTIBLE_ASSETS, -f.deductible_assets - f.earlier[DEDUCTIBLE_ASSETS]),
 		(CREDIT, -f.credit_before + f.new_credit),
 		(PAYABLE, -f.to_pay),
 	]

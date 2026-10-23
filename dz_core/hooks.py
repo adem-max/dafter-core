@@ -41,12 +41,15 @@ after_migrate = "dz_core.setup.install.after_migrate"
 # a `dz_features` hook; dz_core has none of its own yet.
 extend_bootinfo = ["dz_core.features.boot"]
 
-# The audit trail: who validated, cancelled or changed what, from where
-# (books/audit.py, AUDITED there)
+# The audit trail: who validated, cancelled, changed or deleted what, from where
+# (books/audit.py). The documents that post to the ledgers: audited here, and
+# nobody may delete one, assets aside (setup/permissions.py). Apps on top add theirs with a
+# `dz_no_delete` hook and the same doc_events (dz_cod: Courier Settlement).
 AUDIT = {
 	"on_submit": "dz_core.books.audit.log",
 	"on_cancel": "dz_core.books.audit.log",
 	"on_update_after_submit": "dz_core.books.audit.log",
+	"on_trash": "dz_core.books.audit.log",
 }
 AUDITED = [
 	"Sales Invoice",
@@ -59,7 +62,17 @@ AUDITED = [
 	"Purchase Receipt",
 	"Landed Cost Voucher",
 	"Period Closing Voucher",
+	"Subcontracting Receipt",
+	"Asset",
+	"Asset Capitalization",
+	"Asset Repair",
+	"Asset Value Adjustment",
+	"Invoice Discounting",
+	"Process Deferred Accounting",
 ]
+# The audit trail points at the documents it records: a deletion (audited
+# above, on_trash runs before Frappe's link check) must not be refused for it
+ignore_links_on_delete = ["DZ Audit Log"]
 
 doc_events = {
 	**{doctype: dict(AUDIT) for doctype in AUDITED},

@@ -258,11 +258,19 @@ def entry_files(company, start, end, rows=None):
 @frappe.whitelist()
 def export_entries(company, from_date, to_date):
 	"""Write the export of the period, keep it on a DZ Archive and return
-	{"archive": name, "files": [[file name, sha256]...]}."""
-	from dz_core.books.archive import EXPORT, keep
+	{"archive": name, "files": [[file name, sha256]...]}. While nothing moved
+	in the books since the last export of the same period, that one is given
+	back (books/archive.py unchanged)."""
+	from dz_core.books.archive import EXPORT, check_maker, keep, unchanged
 
+	check_maker()
 	frappe.has_permission("GL Entry", "read", throw=True)
-	if getdate(from_date) > getdate(to_date):
+	from_date, to_date = getdate(from_date), getdate(to_date)
+	if from_date > to_date:
 		frappe.throw(_("La date de début est après la date de fin."))
-	archive = keep(company, EXPORT, entry_files(company, from_date, to_date), from_date, to_date)
+	kept = unchanged(company, EXPORT, from_date, to_date)
+	if kept:
+		archive = frappe.get_doc("DZ Archive", kept)
+	else:
+		archive = keep(company, EXPORT, entry_files(company, from_date, to_date), from_date, to_date)
 	return {"archive": archive.name, "files": [[row.file_name, row.sha256] for row in archive.files]}

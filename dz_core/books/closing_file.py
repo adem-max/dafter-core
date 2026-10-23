@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 
 from dz_core.books import tables
-from dz_core.books.archive import CLOSING_FILE, keep
+from dz_core.books.archive import CLOSING_FILE, check_maker, keep, unchanged
 from dz_core.books.export import entry_files, entry_rows
 from dz_core.books.statements import BALANCE_SHEET, INCOME_STATEMENT
 from dz_core.books.year_end import NOT_FOR_THE_FILE, failing, refuse_if, year_bounds, year_checks
@@ -54,8 +54,9 @@ def tax_tables(company, start, end):
 
 @frappe.whitelist()
 def make_closing_file(company, fiscal_year, draft=0):
-	"""Returns the DZ Archive's name."""
-	frappe.has_permission("DZ Archive", "read", throw=True)
+	"""Returns the DZ Archive's name: a new one, or the last one while nothing
+	moved in the books since (books/archive.py unchanged)."""
+	check_maker()
 	frappe.has_permission("GL Entry", "read", throw=True)
 	draft = int(draft or 0)
 	start, end = year_bounds(fiscal_year)
@@ -63,6 +64,9 @@ def make_closing_file(company, fiscal_year, draft=0):
 	problems = failing(rows, except_codes=NOT_FOR_THE_FILE)
 	if not draft:
 		refuse_if(problems, _("Dossier de clôture refusé"))
+	kept = unchanged(company, CLOSING_FILE, start, end, draft=1 if problems else 0)
+	if kept:
+		return kept
 	banner = _(DRAFT) if problems else None
 
 	entries = entry_rows(company, start, end)

@@ -1,14 +1,17 @@
 """Run after `bench install-app dz_core` and after every `bench migrate`.
 
 Safe to run many times: it creates what is missing and never overwrites
-what the user changed. The client-specific part (company, sector, tax
-regime) is not here: it is dz_core.setup.new_client.prepare, run once.
+what the user changed, with one exception: the right to delete an
+accounting document is taken away again (setup/permissions.py). The
+client-specific part (company, sector, tax regime) is not here: it is
+dz_core.setup.new_client.prepare, run once.
 """
 
 import frappe
 
 from dz_core.features import apply_features, move_legacy_key
 from dz_core.setup.custom_fields import setup_custom_fields
+from dz_core.setup.permissions import lock_deletions
 from dz_core.setup.wilayas import setup_wilayas
 
 
@@ -30,6 +33,7 @@ def setup_all():
 	setup_statements()  # the SCF bilan and compte de résultat (books/statements.py)
 	setup_stamp_defaults()  # the payment modes' rows; the stamp duty stays off (stamp.py)
 	setup_informal_supplier()  # for purchases without an invoice (tax_checks.py)
+	lock_deletions()  # again: a delete right given back by hand does not last (setup/permissions.py)
 	# Optional features: old key name, then records to match the list. Apps on
 	# top call apply_features() again after their own setup.
 	move_legacy_key()

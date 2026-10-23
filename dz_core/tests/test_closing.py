@@ -7,9 +7,10 @@ Run: bench --site <site> run-tests --module dz_core.tests.test_closing
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges
 from frappe.tests import IntegrationTestCase
-from frappe.utils import flt, get_last_day, today
+from frappe.utils import add_days, add_months, flt, get_first_day, get_last_day, today
 
 from dz_core import closing
+from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import REEL
 from dz_core.setup.accounts import account_by_number, opening_account
 from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import SECTORS
@@ -169,6 +170,21 @@ class TestMonthlyClose(IntegrationTestCase):
 		finally:
 			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", before)
 
+	def test_the_freeze_date_never_moves_back(self):
+		"""Freezing an older month would reopen the months after it, a closed year too."""
+		before = frappe.db.get_value("Company", self.company, "accounts_frozen_till_date")
+		audit = {"reference_doctype": "Company", "operation": "Gel des écritures"}
+		try:
+			end = closing.freeze_month(self.company, today())
+			rows = frappe.db.count("DZ Audit Log", audit)
+			self.assertEqual(closing.freeze_month(self.company, today()), end)  # again: nothing changes
+			self.assertEqual(frappe.db.count("DZ Audit Log", audit), rows)
+			with self.assertRaises(frappe.ValidationError):
+				closing.freeze_month(self.company, add_months(today(), -1))
+			self.assertEqual(frappe.db.get_value("Company", self.company, "accounts_frozen_till_date"), end)
+		finally:
+			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", before)
+
 	def test_tva_of_the_month_and_its_settlement(self):
 		figures = closing.tva_figures(self.company, today())
 		if figures.settlement:
@@ -229,3 +245,69 @@ class TestMonthlyClose(IntegrationTestCase):
 		self.assertAlmostEqual(closing.tva_figures(self.company, today()).collected_19, after.collected_19, 2)
 		with self.assertRaises(frappe.ValidationError):
 			closing.make_tva_settlement(self.company, today())
+
+
+class TestTvaLeftByEarlierMonths(IntegrationTestCase):
+	"""A month never settled: its TVA goes into the next settlement, and the
+	month close says so (closing.tva_figures, tva_rows)."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.company = ensure_prepared().company
+		apply_scf_setup(cls.company)
+
+	def test_a_month_left_unsettled_is_taken_into_the_next_settlement(self):
+		figures = closing.tva_figures(self.company, today())
+		if figures.settlement:
+			self.skipTest("this month's TVA is already settled on this site")
+		last_month = add_days(get_first_day(today()), -1)
+		if not frappe.db.exists(
+			"Fiscal Year", {"year_start_date": ["<=", last_month], "year_end_date": [">=", last_month]}
+		):
+			self.skipTest("no fiscal year for last month on this site")
+		frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", None)
+		entry = frappe.get_doc(
+			{
+				"doctype": "Journal Entry",
+				"company": self.company,
+				"posting_date": last_month,
+				"accounts": [
+					{"account": account_by_number(self.company, "5311"), "debit_in_account_currency": 190},
+					{"account": account_by_number(self.company, "445711"), "credit_in_account_currency": 190},
+				],
+			}
+		).insert()
+		entry.submit()
+
+		after = closing.tva_figures(self.company, today())
+		self.assertAlmostEqual(after.earlier_collected - figures.earlier_collected, 190, 2)
+		self.assertAlmostEqual(after.collected_19, figures.collected_19, 2)  # not this month's own TVA
+		self.assertAlmostEqual(
+			(after.to_pay - after.new_credit) - (figures.to_pay - figures.new_credit), 190, 2
+		)
+
+		settings = frappe.get_single("DZ Core Settings")
+		regime = settings.tax_regime
+		try:
+			frappe.db.set_single_value("DZ Core Settings", "tax_regime", REEL)
+			frappe.clear_document_cache("DZ Core Settings", "DZ Core Settings")
+			if settings.company == self.company:
+				rows = closing.closing_rows(self.company, today())
+				self.assertEqual(check(rows, "TVA laissée")["status"], closing.TO_CHECK)
+				self.assertEqual(check(rows, "TVA du mois liquidée")["status"], closing.TO_CHECK)
+
+			closing.make_tva_settlement(self.company, today())
+			end = get_last_day(today())
+			for number in closing.TVA_ACCOUNTS:
+				with self.subTest(account=number):
+					self.assertAlmostEqual(
+						closing.balance(self.company, closing.accounts_of(self.company, number), end), 0, 2
+					)
+			if settings.company == self.company:
+				rows = closing.closing_rows(self.company, today())
+				self.assertEqual(check(rows, "TVA laissée")["status"], closing.OK)
+				self.assertEqual(check(rows, "TVA du mois liquidée")["status"], closing.OK)
+		finally:
+			frappe.db.set_single_value("DZ Core Settings", "tax_regime", regime)
+			frappe.clear_document_cache("DZ Core Settings", "DZ Core Settings")

@@ -27,12 +27,12 @@ and [MANUEL-PROCEDURES.md](MANUEL-PROCEDURES.md) (procedures manual).
 
 | Article | ERPNext | Daftar |
 | --- | --- | --- |
-| 13, no change after validation | Immutable ledger: a cancel keeps the original lines and adds reversals dated the cancel day | Immutable ledger on, ledger deletion off (0.3.0); no Delete right on accounting and stock documents, drafts included; no "Delete Transactions" (0.3.0); "Clôture du mois" freezes each month; "Exercice comptable" closes and freezes the year |
+| 13, no change after validation | Immutable ledger: a cancel keeps the original lines and adds reversals dated the cancel day | Immutable ledger on, ledger deletion off (0.3.0); no Delete right on the documents that post to the ledgers, drafts included (the audited list in hooks.py, and dz_cod's Versements), taken away again after every migrate; no "Delete Transactions" (0.3.0); only the Administrator can still delete, and the deletion is audited; "Clôture du mois" freezes each month, and the freeze date never moves back from Daftar (the Company form can, audited); "Exercice comptable" closes and freezes the year |
 | 12, journals and monthly summaries | One general ledger, no journals | Each line's journal (VE, AC, CA, BQ, ST, OD, AN) computed from its voucher (`books/journals.py`); the centralising journal per journal and month (`books/tables.py`) |
 | 14, carry-forward | Balance-sheet balances roll on | The entry export starts a fiscal year with "AN" lines: balances of classes 1 to 5, and earlier results not yet closed on 120 / 129 |
 | 15, export | Nothing usable as is | Report "Export des écritures": FEC layout plus the user, cancelled originals and their reversals included; text and Excel files kept with their SHA-256 (`books/export.py`) |
 | 17, users and rights | Users, roles | One user per person (procedures manual); no shared logins |
-| 18, author, workstation, date, operation | Version keeps user and time | DZ Audit Log: user, IP address and browser on every validation, cancellation and change after validation, and on each change of the freeze date (`books/audit.py`); kept, never pruned |
+| 18, author, workstation, date, operation | Version keeps user and time | DZ Audit Log: user, IP address and browser on every validation, cancellation, change after validation and deletion, and on each change of the freeze date (`books/audit.py`); kept, never pruned |
 | 19 to 21, archiving, backups, restore | Site backups | Yearly archive of a frozen year: entry export, books, SCF statements, audit trail, with a `sha256sum` register (DZ Archive, `books/archive.py`); daily off-site backup and a restore test (`scripts/`, DEPLOY.md) |
 | 7 to 9, documentation, commitment | | This file, the procedures manual, the draft commitment |
 
@@ -59,7 +59,9 @@ debit balances reclassified to 4097; class 72 equal to the change in classes 33
 and 35; each courier's 4671n against the parcels it owes for (dz_cod);
 the regime's returns (G50 by the 20th; G12 by 30 June; G12 bis by 20
 January); then "Geler le mois". On the régime réel, "Aide G50": settlement
-entry, the stamp duty, the TVA given back on losses and gifts.
+entry, the stamp duty, the TVA given back on losses and gifts. A month left
+unsettled is taken into the next settlement and shown apart ("Clôture du
+mois" flags it): the accountant says how to declare it.
 
 Yearly (report "Exercice comptable"): the same checks at the year end, the
 stock accounts against the stock ledger, then:
@@ -73,6 +75,10 @@ stock accounts against the stock ledger, then:
 4. "Archive annuelle" (needs the frozen year), kept 10 years: never prune
    the site's private files.
 
+The entry export, the closing file and the archive are made by an Accounts
+Manager (or System Manager) only, since an archive is never deleted; asked
+again while nothing moved in the books, they give back the last one.
+
 After the owners' decision, a journal entry allocates 120 / 129 (to 110 /
 119, 106x, 457, or 1018 with the balance of 108 for a sole trader).
 
@@ -82,6 +88,7 @@ After the owners' decision, a journal entry allocates 120 / 129 (to 110 /
    on the opening date (against 479).
 2. `dz_core.imports.opening`: the accountant's closing trial balance and the
    open invoices; a dry run lists every problem; then the open invoices and one
-   "Écritures d'à-nouveaux" entry, and 479 must end at zero.
+   "Écritures d'à-nouveaux" entry, and 479 must end at zero. Once done it is
+   refused: to redo it, cancel the opening documents first.
 3. Existing fixed assets by hand: Asset, "Is Existing Asset", with the
    opening accumulated depreciation (their balances are in step 2).

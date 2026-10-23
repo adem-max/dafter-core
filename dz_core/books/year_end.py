@@ -25,7 +25,18 @@ from dz_core.tax_checks import informal_purchases
 # checks that must be OK before the year is closed (accounts that must be
 # empty, production, stock) and, with the rest of the close, before the file
 BLOCK_CLOSING = {"6589", "4781", "476", "479", "72", "stock"}
-NOT_FOR_THE_FILE = {"4081", "frozen", "result", "closed", "closing_file", "archive", "deadline", "informal"}
+NOT_FOR_THE_FILE = {
+	"4081",
+	"frozen",
+	"result",
+	"closed",
+	"closing_file",
+	"archive",
+	"deadline",
+	"informal",
+	"tva",
+	"tva_earlier",
+}
 PROFIT, LOSS = "120", "129"
 
 
