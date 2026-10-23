@@ -7,9 +7,10 @@ Run: bench --site <site> run-tests --module dz_core.tests.test_closing
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges
 from frappe.tests import IntegrationTestCase
-from frappe.utils import flt, get_last_day, today
+from frappe.utils import add_days, add_months, flt, get_first_day, get_last_day, today
 
 from dz_core import closing
+from dz_core.dz_core.doctype.dz_core_settings.dz_core_settings import REEL
 from dz_core.setup.accounts import account_by_number, opening_account
 from dz_core.setup.scf import apply_scf_setup
 from dz_core.setup.sectors import SECTORS
@@ -166,6 +167,21 @@ class TestMonthlyClose(IntegrationTestCase):
 			self.assertEqual(
 				check(closing.closing_rows(self.company, today()), "Mois gelé")["status"], closing.OK
 			)
+		finally:
+			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", before)
+
+	def test_the_freeze_date_never_moves_back(self):
+		"""Freezing an older month would reopen the months after it, a closed year too."""
+		before = frappe.db.get_value("Company", self.company, "accounts_frozen_till_date")
+		audit = {"reference_doctype": "Company", "operation": "Gel des écritures"}
+		try:
+			end = closing.freeze_month(self.company, today())
+			rows = frappe.db.count("DZ Audit Log", audit)
+			self.assertEqual(closing.freeze_month(self.company, today()), end)  # again: nothing changes
+			self.assertEqual(frappe.db.count("DZ Audit Log", audit), rows)
+			with self.assertRaises(frappe.ValidationError):
+				closing.freeze_month(self.company, add_months(today(), -1))
+			self.assertEqual(frappe.db.get_value("Company", self.company, "accounts_frozen_till_date"), end)
 		finally:
 			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", before)
 
