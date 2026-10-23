@@ -126,3 +126,13 @@ class TestOpening(IntegrationTestCase):
 		self.assertIn("pas équilibrée", errors)
 		self.assertIn("total des factures", errors)
 		self.assertIn("stock 311", errors)
+
+	def test_a_second_opening_is_refused(self):
+		"""Run again, the import would post every balance twice, and 479 would still end at zero."""
+		if not opening.already_opened(self.company):
+			plan, report = self.checked(self.balanced())
+			opening.post(self.company, DAY, plan, report)
+		self.assertTrue(opening.already_opened(self.company))
+		# a dry run: the real one commits, and stops on the same errors before posting
+		result = opening.import_opening(self.balanced(), DAY, dry_run=1)
+		self.assertIn("déjà ouverts", " | ".join(result["errors"]))

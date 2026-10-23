@@ -26,7 +26,9 @@ at exactly zero:
   depreciation are in this entry).
 
 Refused, with every reason listed, when an account is unknown, the balance
-does not balance, or the invoices or the stock differ from it.
+does not balance, the invoices or the stock differ from it, or the company
+already has submitted opening documents (a second run would post everything
+twice).
 """
 
 import json
@@ -185,9 +187,29 @@ def posted(company, account, until):
 	)
 
 
+def already_opened(company):
+	"""The submitted opening documents of the company: a second import would
+	post every balance twice (and 479 would still end at zero)."""
+	return [
+		name
+		for doctype in ("Journal Entry", "Sales Invoice", "Purchase Invoice")
+		for name in frappe.get_all(
+			doctype, filters={"company": company, "docstatus": 1, "is_opening": "Yes"}, pluck="name"
+		)
+	]
+
+
 def check(company, opening_date, data, report):
 	plan = {"customers": [], "suppliers": [], "journal": []}
 	temporary = opening_account(company)
+	done = already_opened(company)
+	if done:
+		shown = ", ".join(done[:5]) + (f" (+{len(done) - 5})" if len(done) > 5 else "")
+		report.error(
+			BALANCE,
+			"-",
+			f"les comptes sont déjà ouverts ({shown}) : annulez d'abord ces pièces pour recommencer",
+		)
 	sides = {"Receivable": 0.0, "Payable": 0.0}
 	total = 0.0
 	for number, row in data[BALANCE]:

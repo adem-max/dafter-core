@@ -82,6 +82,7 @@ After the owners' decision, a journal entry allocates 120 / 129 (to 110 /
    on the opening date (against 479).
 2. `dz_core.imports.opening`: the accountant's closing trial balance and the
    open invoices; a dry run lists every problem; then the open invoices and one
-   "Écritures d'à-nouveaux" entry, and 479 must end at zero.
+   "Écritures d'à-nouveaux" entry, and 479 must end at zero. Once done it is
+   refused: to redo it, cancel the opening documents first.
 3. Existing fixed assets by hand: Asset, "Is Existing Asset", with the
    opening accumulated depreciation (their balances are in step 2).
