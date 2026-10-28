@@ -104,7 +104,7 @@ ERPNext and Frappe v16 (16.51.1 on the dev bench, 20 October 2026; built on
 | **MariaDB 10.11** | WSL | One database per site; root password `root` on this PC only |
 | **Redis** | started by `bench start` | Cache, job queues, socketio; `new-site` needs it running |
 | **honcho** | inside `bench start` | Starts the processes of `Procfile` (web, socketio, workers, schedule, Redis) |
-| **git + GitHub** | three repos | `adem-max/dafter-core`, `adem-max/dafter-cod` (public), `adem-max/dz_adm` (private). LF line endings, `core.autocrlf=false`, `core.filemode=false` |
+| **git + GitHub** | three repos | `adem-max/dafter-core`, `adem-max/dafter-cod`, `adem-max/dz_adm` (all public). LF line endings, `core.autocrlf=false`, `core.filemode=false` |
 | **gh** | Git Bash | Pull requests |
 | **pre-commit** | `.pre-commit-config.yaml` in each repo | trailing whitespace, merge markers, `check-ast`, JSON/TOML/YAML checks, no `debug-statements`; **ruff** (lint + import order + format); **prettier** and **eslint** for JS |
 | **ruff** | `pyproject.toml` `[tool.ruff]` | Lint rules F, E, W, I, UP, B, RUF; line length 110; tabs (Frappe style) |

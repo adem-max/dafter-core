@@ -8,7 +8,7 @@ frappe   (framework)
 erpnext  (stock, sales, purchases, manufacturing, accounting) - never edited
 dz_core  (this app: what every client gets)
 dz_cod   (optional, on top: orders, couriers and returns for online sellers)
-dz_hub   (private, the vendor's own site: clients, offers, billing; talks to dz_core)
+dz_hub   (vendor only, the hub site: clients, offers, billing; talks to dz_core)
 ```
 
 Pack Atelier = a site with `dz_core`.
