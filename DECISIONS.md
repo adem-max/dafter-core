@@ -554,7 +554,15 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   only to its owner (Administrator, who ran the load) or to users who can
   read what it is attached to.
 - **Demo logins share one password** (`Demo-2026!`), written in docs/DEMO.md:
-  demo sites hold only invented data.
+  demo sites hold only invented data. **On a public link it is replaced**
+  (29 October 2026, review of 27 October, 3.4): the repo is public, so
+  `scripts/demo_tunnels.sh` sets a new random password on every demo login at
+  each start and prints it, and takes System Manager away from any demo login
+  (`loader.secure_logins`): a visitor could otherwise change the site's
+  settings, features and users. The tunnels keep `bench serve`, not gunicorn:
+  without nginx in front, gunicorn serves no `/assets` (CSS, JS), and
+  Werkzeug 3's debugger answers only requests addressed to the PC's own names
+  (a tunnel's are `*.trycloudflare.com`), behind a PIN.
 - **A load takes about 20 minutes on the WSL bench** (code on the Windows
   disk), against the 10 planned. Acceptable for a demo built once and topped
   up later; to be measured again on the server.

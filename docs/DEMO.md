@@ -62,7 +62,7 @@ bench --site demo.localhost execute dz_cod.demo.loader.load
 The shop's loader makes no demo login (only `Administrator`, with the
 password chosen at `new-site`); `scripts/demo_tunnels.sh` adds
 `gerant@demo.localhost` with the manager and user roles of sales, stock and
-accounts, password `Demo-2026!`.
+accounts (never System Manager).
 
 ## Show the demos from another computer
 
@@ -80,6 +80,9 @@ From Windows: `wsl -d Ubuntu-24.04 -- bash ~/frappe-bench/apps/dz_core/scripts/d
 
 - The links change at every start, and die when WSL stops or the PC sleeps.
 - Anyone with a link reaches the login page: stop the tunnels after the demo.
+- Each start sets a **new password on every demo login** of the three sites
+  and prints it with the links (the repo is public, so `Demo-2026!` is no
+  password on a public link). It stays until the next start or the next load.
 - Live updates (Frappe's realtime, port 9000) don't go through the tunnel:
   pages, reports and printing work, notifications don't pop up.
 - Walking the script changes the data (the shop's steps create delivery
@@ -94,7 +97,8 @@ From Windows: `wsl -d Ubuntu-24.04 -- bash ~/frappe-bench/apps/dz_core/scripts/d
 | `production@food-demo.localhost`, `atelier@atelier-demo.localhost` | Production and stock | Français |
 | `ventes@<site>` | Sales and payments | العربية (to show the Arabic interface) |
 
-Password for all: `Demo-2026!` (demo sites only). `Administrator` keeps the
+Password for all: `Demo-2026!` (demo sites only, on this PC), or the one
+`demo_tunnels.sh` printed at its last start. `Administrator` keeps the
 password chosen at `new-site`. Every login lands on the Atelier home page
 (`/desk/atelier`); the factory icon on the left rail opens its menu.
 

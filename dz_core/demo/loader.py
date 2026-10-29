@@ -237,6 +237,26 @@ def setup_users(p):
 		update_password(email, DEMO_PASSWORD)
 
 
+def secure_logins(password):
+	"""Before a demo goes on a public link (scripts/demo_tunnels.sh): every demo
+	login (<name>@<site>) gets this password, and none keeps System Manager,
+	which could change the site's features and settings. Administrator keeps
+	its own password."""
+	from frappe.utils.password import update_password
+
+	if len(password or "") < 12:
+		frappe.throw("Mot de passe trop court (12 caractères au moins).")
+	logins = frappe.get_all(
+		"User", filters={"name": ["like", f"%@{frappe.local.site}"], "enabled": 1}, pluck="name"
+	)
+	for email in logins:
+		user = frappe.get_doc("User", email)
+		if "System Manager" in {row.role for row in user.roles}:
+			user.remove_roles("System Manager")
+		update_password(email, password)
+	return logins  # bench execute commits
+
+
 # ------------------------------------------------------------ summary
 
 
