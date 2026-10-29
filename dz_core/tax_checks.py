@@ -144,18 +144,20 @@ def tva_reversal_lines(company, start, end):
 
 
 def tva_reversal_entry(company, end):
-	return frappe.db.get_value(
-		"Journal Entry", {"company": company, "docstatus": 1, "user_remark": reversal_remark(end)}
-	)
+	from dz_core.closing import closing_entries, closing_key
+
+	found = closing_entries(company, closing_key("tva-losses", end))
+	return found[0] if found else None
 
 
 @frappe.whitelist()
 def make_tva_reversal(company, month):
 	"""Dr each issue's expense account / Cr 44566, dated the month end, once a month."""
-	from dz_core.closing import month_bounds
+	from dz_core.closing import closing_key, lock_company, month_bounds
 
 	frappe.has_permission("Journal Entry", "create", throw=True)
 	start, end = month_bounds(month)
+	lock_company(company)
 	if tva_reversal_entry(company, end):
 		frappe.throw(_("La TVA sur les pertes et dons de ce mois est déjà reversée."))
 	by_account = {}
@@ -167,7 +169,14 @@ def make_tva_reversal(company, month):
 		frappe.throw(_("Pas de sortie pour perte ou don ce mois-ci."))
 	cost_center = frappe.get_cached_value("Company", company, "cost_center")
 	entry = frappe.new_doc("Journal Entry")
-	entry.update({"company": company, "posting_date": end, "user_remark": reversal_remark(end)})
+	entry.update(
+		{
+			"company": company,
+			"posting_date": end,
+			"user_remark": reversal_remark(end),
+			"dz_closing_key": closing_key("tva-losses", end),
+		}
+	)
 	for account, amount in by_account.items():
 		entry.append(
 			"accounts",

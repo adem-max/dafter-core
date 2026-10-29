@@ -150,7 +150,10 @@ def ifu_remark(fiscal_year):
 @frappe.whitelist()
 def book_ifu(company, fiscal_year):
 	"""Dr 6428 / Cr 4477 for the year's IFU not booked yet. Returns the entry."""
+	from dz_core.closing import closing_key, lock_company
+
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	lock_company(company)  # two clicks would both see nothing booked yet
 	settings = frappe.get_single("DZ Core Settings")
 	f = year_figures(company, fiscal_year, settings.tax_regime if settings.company == company else None)
 	amount = flt(f.due - f.booked, 2)
@@ -167,6 +170,7 @@ def book_ifu(company, fiscal_year):
 			"company": company,
 			"posting_date": min(f.end, getdate(today())),
 			"user_remark": ifu_remark(fiscal_year),
+			"dz_closing_key": closing_key("ifu", fiscal_year=fiscal_year),
 			"accounts": [
 				{
 					"account": accounts[CHARGE],

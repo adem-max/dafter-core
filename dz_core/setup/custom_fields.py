@@ -172,6 +172,24 @@ STOCK_ENTRY_FIELDS = [
 ]
 
 
+# The entries Daftar makes once a month or once a year (TVA settlement, 4081
+# reclassification, TVA on losses, IFU) are found by this key, never by their
+# remark: the remark is translated, and a user may type the same words
+# (closing.closing_key; review of 27 October 2026, 2.5)
+JOURNAL_ENTRY_FIELDS = [
+	{
+		"fieldname": "dz_closing_key",
+		"label": "Clé de clôture Daftar",
+		"fieldtype": "Data",
+		"insert_after": "user_remark",
+		"read_only": 1,
+		"no_copy": 1,
+		"search_index": 1,
+		"print_hide": 1,
+	},
+]
+
+
 def setup_custom_fields():
 	"""Create or update all custom fields. Safe to run many times."""
 	create_custom_fields(
@@ -181,6 +199,7 @@ def setup_custom_fields():
 			"Sales Invoice": SALES_INVOICE_FIELDS,
 			"Purchase Invoice": PURCHASE_INVOICE_FIELDS,
 			"Stock Entry": STOCK_ENTRY_FIELDS,
+			"Journal Entry": JOURNAL_ENTRY_FIELDS,
 		},
 		update=True,
 	)

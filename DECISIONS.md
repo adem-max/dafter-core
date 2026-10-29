@@ -301,6 +301,16 @@ tax office (doc section 9).
   "Accounts Frozen Till Date").
 - **No production reclassification entry**: each manufacture posts
   materials consumed (60x) and production stocked (72) itself (`production.py`).
+- **Entries made once a period carry a key** (29 October 2026, review of
+  27 October, 2.5): the TVA settlement, the 4081 reclassification and its
+  reversal, the TVA given back on losses and the IFU entry are found by Journal
+  Entry `dz_closing_key` (`tva:2026-10`, `ifu:2026`), no longer by their
+  remark. The remark is translated (`_()`), so once translations exist a user
+  in another language would not find the month's settlement and could settle
+  it twice; and a remark typed by hand on any entry counted as the
+  settlement. Each button also locks the Company row first, so two clicks run
+  one after the other. Patch `closing_keys` gives older entries their key from
+  their French remark.
 
 ## Compliance (22 October 2026)
 

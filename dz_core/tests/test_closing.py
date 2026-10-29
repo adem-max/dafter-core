@@ -311,3 +311,67 @@ class TestTvaLeftByEarlierMonths(IntegrationTestCase):
 		finally:
 			frappe.db.set_single_value("DZ Core Settings", "tax_regime", regime)
 			frappe.clear_document_cache("DZ Core Settings", "DZ Core Settings")
+
+
+class TestClosingKeys(IntegrationTestCase):
+	"""Entries made once a month are found by their key (Journal Entry
+	dz_closing_key), not by their remark (review of 27 October 2026, 2.5)."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.company = ensure_prepared().company
+		apply_scf_setup(cls.company)
+
+	def journal(self, debit, credit, amount, remark=None):
+		entry = frappe.get_doc(
+			{
+				"doctype": "Journal Entry",
+				"company": self.company,
+				"posting_date": today(),
+				"user_remark": remark,
+				"accounts": [
+					{"account": account_by_number(self.company, debit), "debit_in_account_currency": amount},
+					{
+						"account": account_by_number(self.company, credit),
+						"credit_in_account_currency": amount,
+					},
+				],
+			}
+		).insert()
+		entry.submit()
+		return entry
+
+	def unsettled_month(self):
+		if closing.tva_figures(self.company, today()).settlement:
+			self.skipTest("this month's TVA is already settled on this site")
+		frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", None)
+
+	def test_a_typed_remark_is_not_the_settlement(self):
+		self.unsettled_month()
+		self.journal("5311", "5121", 10, remark=closing.settlement_remark(get_last_day(today())))
+		self.assertIsNone(closing.tva_figures(self.company, today()).settlement)
+
+	def test_a_cancelled_settlement_can_be_made_again(self):
+		self.unsettled_month()
+		self.journal("5311", "445711", 190)
+		first = closing.make_tva_settlement(self.company, today())
+		key = frappe.db.get_value("Journal Entry", first, "dz_closing_key")
+		self.assertEqual(key, closing.closing_key("tva", today()))
+		frappe.get_doc("Journal Entry", first).cancel()
+		second = closing.make_tva_settlement(self.company, today())
+		self.assertNotEqual(second, first)
+		self.assertEqual(frappe.db.get_value("Journal Entry", second, "dz_closing_key"), key)
+		frappe.get_doc("Journal Entry", second).cancel()  # the month unsettled again, for the next tests
+
+	def test_the_patch_reads_the_remarks_daftar_wrote(self):
+		from dz_core.patches.closing_keys import key_of
+
+		self.assertEqual(key_of("Liquidation TVA 10/2026", "2026-10-31"), "tva:2026-10")
+		self.assertEqual(key_of("Reversement TVA pertes et dons 09/2026", "2026-09-30"), "tva-losses:2026-09")
+		self.assertEqual(key_of("Reclassement 4081 vers 4097 au 31/10/2026", "2026-10-31"), "srbnb:2026-10")
+		self.assertEqual(
+			key_of("Reclassement 4081 vers 4097 au 31/10/2026", "2026-11-01"), "srbnb-reversal:2026-10"
+		)
+		self.assertEqual(key_of("IFU de l'exercice 2026", "2026-12-31"), "ifu:2026")
+		self.assertIsNone(key_of("Liquidation TVA du mois", "2026-10-31"))
