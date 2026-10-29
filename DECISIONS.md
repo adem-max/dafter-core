@@ -346,7 +346,14 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   us, all or nothing (the tool itself swallows errors), dated the opening
   day; stock from the import workbook's count; one "Écritures d'à-nouveaux"
   entry; 479 must end at zero or nothing is posted. Existing fixed assets
-  are entered by hand.
+  are entered by hand. **Advances** (29 October 2026, review of 27 October,
+  2.2): only the receivable and payable accounts invoices post to (the
+  company's defaults, the accounts on parties and their groups) are compared
+  with the open invoices. Others of those types, 4191 advances received and
+  40913 advances paid, go to the à-nouveaux entry with the party named in the
+  Balance sheet's optional "Tiers" column, one line per party: ERPNext refuses
+  such a line without its party, and a workshop holding customers' deposits
+  could not be opened before.
 - **The 2027 commitment is a draft** (docs/ENGAGEMENT-EDITEUR.md) that claims
   only what the software does, as the advice says; signed by Daftar once a
   registered entity, revised when the arrêté is published.

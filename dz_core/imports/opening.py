@@ -20,7 +20,8 @@ at exactly zero:
   479), since a journal entry cannot post to a stock account; the balance's
   stock lines must equal what that count posted;
 - every other line (fixed assets and their depreciation, equity, bank,
-  cash, taxes, loans...): one Journal Entry "Écritures d'à-nouveaux"
+  cash, taxes, loans, advances to or from a party named in the "Tiers"
+  column...): one Journal Entry "Écritures d'à-nouveaux"
   (is_opening), plus the line that brings 479 to zero. Existing fixed assets
   are entered by hand as assets "Is Existing Asset" (their cost and
   depreciation are in this entry).
@@ -47,6 +48,7 @@ SHEETS = {
 		("Libellé", "label", False),
 		("Débit", "debit", False),
 		("Crédit", "credit", False),
+		("Tiers", "party", False),
 	],
 	CUSTOMERS: [
 		("Client", "party", True),
@@ -63,8 +65,10 @@ SHEETS = {
 		("Reste dû TTC", "amount", True),
 	],
 }
+# A column a file made before it may lack (29 October 2026)
+OPTIONAL_HEADERS = {"Tiers"}
 EXAMPLES = {
-	BALANCE: ["EXEMPLE 5121", "Banque BDL", 250000, 0],
+	BALANCE: ["EXEMPLE 5121", "Banque BDL", 250000, 0, ""],
 	CUSTOMERS: ["EXEMPLE Épicerie El Baraka", "F-2026-118", "15/12/2026", "15/01/2027", 42000],
 	SUPPLIERS: ["EXEMPLE Apiculteurs de Médéa", "FA-778", "20/12/2026", "20/01/2027", 18500],
 }
@@ -74,6 +78,8 @@ README = [
 	"Balance : un compte par ligne, avec son numéro SCF tel qu'il existe dans Daftar (ex. 5121, 10113, 40132).",
 	"Clients ouverts / Fournisseurs ouverts : les factures encore dues, montant restant TTC.",
 	"Le total des factures doit égaler les comptes clients (411...) et fournisseurs (401...) de la balance.",
+	"Avances et acomptes (4191 reçus des clients, 40913 versés aux fournisseurs...) : une ligne par tiers, "
+	"son nom dans la colonne Tiers (client ou fournisseur déjà importé).",
 	"Le stock est compté avant, avec le fichier d'import (feuille Stock) : ses comptes doivent égaler la balance.",
 	"Les dates sont au format JJ/MM/AAAA. Les lignes qui commencent par EXEMPLE sont ignorées.",
 ]
@@ -116,14 +122,19 @@ def read_rows(wb, name, report):
 	columns = SHEETS[name]
 	ws = wb[name]
 	header = [str(cell.value or "").strip() for cell in ws[1]]
-	missing = [text for text, _key, _required in columns if text not in header]
+	missing = [
+		text for text, _key, _required in columns if text not in header and text not in OPTIONAL_HEADERS
+	]
 	if missing:
 		report.error(name, 1, "colonnes introuvables : " + ", ".join(missing))
 		return []
-	positions = {key: header.index(text) for text, key, _required in columns}
+	positions = {key: header.index(text) if text in header else None for text, key, _required in columns}
 	rows = []
 	for number, values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-		row = {key: clean(values[index] if index < len(values) else None) for key, index in positions.items()}
+		row = {
+			key: clean(values[index] if index is not None and index < len(values) else None)
+			for key, index in positions.items()
+		}
 		if not any(value not in (None, "") for value in row.values()):
 			continue
 		if str(next(iter(row.values())) or "").upper().startswith("EXEMPLE"):
@@ -199,9 +210,31 @@ def already_opened(company):
 	]
 
 
+def invoice_accounts(company):
+	"""The receivable and payable accounts the opening invoices post to: the
+	company's defaults and the accounts set on parties and their groups. Other
+	accounts of those types (4191 advances received, 40913 advances paid...)
+	hold no invoice: they go to the à-nouveaux entry, with their party."""
+	defaults = frappe.get_cached_value(
+		"Company", company, ["default_receivable_account", "default_payable_account"]
+	)
+	on_parties = frappe.get_all("Party Account", filters={"company": company}, pluck="account")
+	return {account for account in (*defaults, *on_parties) if account}
+
+
+PARTY_OF = {"Receivable": "Customer", "Payable": "Supplier"}
+
+
+def find_party(party_type, name):
+	return frappe.db.get_value(party_type, {"name": name}) or frappe.db.get_value(
+		party_type, {frappe.scrub(party_type) + "_name": name}
+	)
+
+
 def check(company, opening_date, data, report):
 	plan = {"customers": [], "suppliers": [], "journal": []}
 	temporary = opening_account(company)
+	invoiced = invoice_accounts(company)
 	done = already_opened(company)
 	if done:
 		shown = ", ".join(done[:5]) + (f" (+{len(done) - 5})" if len(done) > 5 else "")
@@ -224,8 +257,28 @@ def check(company, opening_date, data, report):
 			report.error(BALANCE, number, "le compte d'ouverture 479 ne figure pas dans la balance")
 			continue
 		total += amount
-		if account.account_type in sides:
+		if account.account_type in sides and account.name in invoiced:
 			sides[account.account_type] += amount
+		elif account.account_type in sides:
+			party_type = PARTY_OF[account.account_type]
+			party = find_party(party_type, row["party"]) if row["party"] else None
+			if not party:
+				report.error(
+					BALANCE,
+					number,
+					f"compte de tiers {row['number']} : indiquez dans la colonne Tiers le "
+					f"{'client' if party_type == 'Customer' else 'fournisseur'} (déjà importé)",
+				)
+			elif amount:
+				plan["journal"].append(
+					frappe._dict(
+						account=account.name,
+						amount=amount,
+						number=row["number"],
+						party_type=party_type,
+						party=party,
+					)
+				)
 		elif account.account_type == "Stock":
 			counted = posted(company, account.name, opening_date)
 			if abs(counted - amount) > TOLERANCE:
@@ -246,9 +299,7 @@ def check(company, opening_date, data, report):
 	):
 		invoices = 0.0
 		for number, row in data[sheet]:
-			party = frappe.db.get_value(party_type, {"name": row["party"]}) or frappe.db.get_value(
-				party_type, {frappe.scrub(party_type) + "_name": row["party"]}
-			)
+			party = find_party(party_type, row["party"])
 			if not party:
 				report.error(sheet, number, f"« {row['party']} » n'existe pas (importez d'abord les tiers)")
 				continue
@@ -334,19 +385,24 @@ def post(company, opening_date, plan, report):
 				"accounts",
 				{
 					"account": line.account,
+					"party_type": line.get("party_type"),
+					"party": line.get("party"),
 					"debit_in_account_currency": max(line.amount, 0),
 					"credit_in_account_currency": max(-line.amount, 0),
 				},
 			)
-		rest = -sum(line.amount for line in plan["journal"])
-		entry.append(
-			"accounts",
-			{
-				"account": temporary,
-				"debit_in_account_currency": max(rest, 0),
-				"credit_in_account_currency": max(-rest, 0),
-			},
-		)
+		# 479's line: none when the entry balances on its own (no open invoice and
+		# no stock counted), since ERPNext refuses a line with neither debit nor credit
+		rest = flt(-sum(line.amount for line in plan["journal"]), 2)
+		if abs(rest) > TOLERANCE:
+			entry.append(
+				"accounts",
+				{
+					"account": temporary,
+					"debit_in_account_currency": max(rest, 0),
+					"credit_in_account_currency": max(-rest, 0),
+				},
+			)
 		entry.insert()
 		entry.submit()
 		report.done("Journal Entry", entry.name)
