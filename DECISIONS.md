@@ -608,6 +608,15 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   for one encrypted another way). Not Frappe's `backup_encryption_key`: that
   would also encrypt the local backups the restore drill reads, and rclone
   crypt covers every file, the site config included.
+- **A suspended client keeps read access to their books** (review of 27
+  October, 3.5; decision D2 by Adem): `suspension.py`, a doc_events "*" lock
+  on save, submit, cancel and delete while site_config has `dz_suspended`
+  (set by the hub's *Suspendre*, with the scheduler paused). Logs, the audit
+  trail and background report runs stay allowed. Not Frappe's maintenance
+  mode: it shuts the client out, and its read-only variant refuses the login
+  itself, which writes a session (tried 30 October 2026). The client must be
+  able to consult their books for ten years. Limit: a write that skips
+  documents (db_set, SQL in code) is not stopped.
 - **The restore drill cannot act on the real world, and catches a loss**:
   scheduler paused and e-mails muted on the copy; the live site counted as it
   was at the backup's time (`restore_check.summary(until=)`), and the copy
