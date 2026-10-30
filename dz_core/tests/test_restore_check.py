@@ -18,6 +18,15 @@ class TestRestoreCheck(IntegrationTestCase):
 		self.assertEqual(result["Sales Invoice"], frappe.db.count("Sales Invoice"))
 		self.assertIn("last Sales Invoice", result)
 
+	def test_until_counts_what_existed_at_the_backup(self):
+		"""restore_test.sh compares the copy with the live site as it was at the
+		backup's time (review of 20 October 2026, 3.2)."""
+		before = summary(until="2000-01-01 00:00:00")
+		now = summary()
+		self.assertEqual(before["Item"], 0)
+		self.assertGreaterEqual(now["Item"], before["Item"])
+		self.assertEqual(summary(until="2999-12-31 00:00:00")["Item"], now["Item"])
+
 	def test_apps_on_top_add_their_records(self):
 		# dz_cod's hooks.py adds its orders and Versements
 		for doctype in frappe.get_hooks("dz_restore_check_counted"):

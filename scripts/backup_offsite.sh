@@ -32,6 +32,18 @@ failed=()
 cd "$BENCH_DIR" || { echo "No bench at $BENCH_DIR"; exit 1; }
 echo "=== Backup started $(date) ==="
 
+# The files hold the clients' customers (law 18-07 personal data) and each
+# site's encryption_key: they leave the server encrypted, through an rclone
+# "crypt" remote, or not at all (review of 20 October 2026, 3.1).
+# ALLOW_PLAIN_REMOTE=1 lifts the rule, for a remote you encrypt another way.
+remote_name="${REMOTE%%:*}"
+if [ "${ALLOW_PLAIN_REMOTE:-0}" != "1" ] \
+	&& ! rclone config show "$remote_name" 2> /dev/null | grep -Eq '^type *= *crypt'; then
+	echo "!!! the remote \"$remote_name\" is not an rclone crypt remote: nothing copied (docs/DEPLOY.md, section 9)"
+	[ -n "$HEALTHCHECK_URL" ] && curl -fsS -m 10 --retry 3 "$HEALTHCHECK_URL/fail" > /dev/null
+	exit 1
+fi
+
 for site_dir in sites/*/; do
 	site=$(basename "$site_dir")
 	# A real site has a site_config.json; skip "assets" and other folders

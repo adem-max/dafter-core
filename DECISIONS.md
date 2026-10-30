@@ -592,3 +592,23 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
 - **A load takes about 20 minutes on the WSL bench** (code on the Windows
   disk), against the 10 planned. Acceptable for a demo built once and topped
   up later; to be measured again on the server.
+
+## Operations (29 October 2026, reviews of 20 and 27 October)
+
+- **No password on a command line.** `dz_core/secret_bench.py` runs a bench
+  command with `--db-root-password` / `--admin-password` taken from its
+  environment and added to its own `sys.argv` in memory: `ps` and
+  /proc/<pid>/cmdline show every process's arguments to every local user,
+  the environment only to the same user and root. The hub's "Créer le site"
+  and the restore drill use it; DEPLOY.md adds `hidepid=2` for other tools.
+  Not a separate file of secrets: the hub already keeps the root password
+  encrypted in DZ Hub Settings, and a file would be one more copy.
+- **Off-site backups leave encrypted or not at all**: `backup_offsite.sh`
+  refuses a remote that is not an rclone `crypt` remote (`ALLOW_PLAIN_REMOTE=1`
+  for one encrypted another way). Not Frappe's `backup_encryption_key`: that
+  would also encrypt the local backups the restore drill reads, and rclone
+  crypt covers every file, the site config included.
+- **The restore drill cannot act on the real world, and catches a loss**:
+  scheduler paused and e-mails muted on the copy; the live site counted as it
+  was at the backup's time (`restore_check.summary(until=)`), and the copy
+  must hold at least that much.
