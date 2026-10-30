@@ -329,6 +329,22 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   year's first day gets virtual "AN" lines (art. 14).
 - **Our own audit trail, DZ Audit Log**: ERPNext's Activity Log is pruned
   after 90 days and its Version log has no IP or workstation (art. 18).
+- **The audit trail is a hash chain** (29 October 2026, review of 27
+  October, 4.3; D3 as proposed): each row has its number in its company's
+  chain, the previous row's hash and its own (SHA-256 of that and the row's
+  content, time included), set when the row is written
+  (`books/audit_chain.py`). `verify_chain` finds a row changed, removed or
+  slipped in; "Exercice comptable" shows it, and an untouched chain is needed
+  for the closing file. One chain per company (the demo wipe deletes a
+  company's rows). **Limits:** someone with direct database access can
+  recompute a whole chain, so the yearly archive keeps the chain's last hash
+  at the year end (`chaine-audit-<year>.txt`, in the register kept
+  off-site); writes are ordered by a lock on the Company row and a locking
+  read of the tail, so audit rows of one company are written one after the
+  other (two validations at the same moment wait for each other at that
+  last step; a deadlock with another lock taken after it is possible, and
+  MariaDB would then refuse one of the two). Concurrency is not tested with
+  two real connections. Patch `chain_audit_log` chains older rows by date.
 - **Archives are kept with SHA-256 hashes** (DZ Archive, `sha256sum`
   register): made only by code, never changed, never deleted, nor their
   files; the demo wipes alone forget them. Ten years (CPF art. 64) through

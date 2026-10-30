@@ -16,6 +16,13 @@ class DZAuditLog(Document):
 		if not self.is_new():
 			frappe.throw(_("Le journal d'audit ne se modifie pas."))
 
+	def db_insert(self, *args, **kwargs):
+		# here the row's name and time are final: chain it (books/audit_chain.py)
+		from dz_core.books.audit_chain import link
+
+		link(self)
+		return super().db_insert(*args, **kwargs)
+
 	def on_trash(self):
 		if not frappe.flags.dz_wipe:
 			frappe.throw(_("Le journal d'audit ne se supprime pas."))
