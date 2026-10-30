@@ -73,9 +73,12 @@ def year_figures(company, fiscal_year=None, regime=None):
 	charge = frappe.db.get_value("Account", {"company": company, "account_number": CHARGE, "is_group": 0})
 	booked = (
 		flt(
+			# not the closing voucher, which empties 6428 at the year end: once the
+			# year was closed, the IFU booked read 0 (review of 27 October 2026, 1.1)
 			frappe.db.sql(
 				"""SELECT SUM(debit - credit) FROM `tabGL Entry` WHERE company = %s AND account = %s
-				AND is_cancelled = 0 AND posting_date BETWEEN %s AND %s""",
+				AND is_cancelled = 0 AND posting_date BETWEEN %s AND %s
+				AND voucher_type != 'Period Closing Voucher'""",
 				(company, charge, start, end),
 			)[0][0]
 		)

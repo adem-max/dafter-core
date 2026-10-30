@@ -350,7 +350,14 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   accountant's closing file (refused while a check fails, or a marked
   draft), the yearly archive (frozen year only). The allocation of the
   result stays a journal entry after the owners' decision. A year is never
-  closed on a test site: it would block posting in it.
+  closed on a test site: it would block posting in it. **After the close**
+  (29 October 2026, review of 27 October, 1.1): the closing voucher empties
+  classes 6 and 7 on the year-end date, so a figure of the year's own
+  movements leaves it out (`closing.balance(exclude_closing=True)` for the
+  class 72 check, the IFU booked): the 72 check turned "À voir" and refused
+  the closing file, and the IFU booked read 0. Balances read from the very
+  beginning keep it, or every closed year would count again. Tested with
+  closing-voucher lines written in a rolled-back test, not a real voucher.
 - **Opening from the trial balance** (`imports/opening.py`): open invoices
   through ERPNext's Opening Invoice Creation Tool's builder but inserted by
   us, all or nothing (the tool itself swallows errors), dated the opening
