@@ -53,7 +53,9 @@ def canonical(row):
 
 
 def row_hash(row):
-	return hashlib.sha256((row.get("previous_hash") or GENESIS).encode() + canonical(row).encode()).hexdigest()
+	return hashlib.sha256(
+		(row.get("previous_hash") or GENESIS).encode() + canonical(row).encode()
+	).hexdigest()
 
 
 def company_condition(company):

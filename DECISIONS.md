@@ -121,6 +121,28 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Each app declares its own features with a `dz_features` hook pointing at
   a dict; dz_core has none of its own yet. The old key `dz_cod_features` is
   still read and moved on migrate; `dz-cod-features` stays as an alias.
+- **How firm a switched-off feature is** (29 October 2026, review of 27
+  October, 4.4 and 4.5). The list lives in site_config, which nobody changes
+  from the browser. A switched-off report or print format is disabled, and
+  Frappe refuses to run a disabled report. Re-enabling it in the form:
+  Frappe already refuses any change to a standard report outside developer
+  mode, but not to a print format; `features.keep_switched_off` (Report and
+  Print Format validate) refuses both, in developer mode too. Whitelisted
+  methods carry `@requires_feature`, so a URL called by hand is refused the
+  same way. **Limits:** hiding a button in the browser is no gate (the
+  server checks are); someone with server access (bench, site_config) can
+  switch anything on, which is why clients are never System Manager and
+  never get server access (DEPLOY.md).
+- **One workflow covers every Sales Order of a site** (review of 27
+  October, 4.4): Frappe allows one active Workflow per doctype, so dz_cod's
+  COD workflow also carries the direct sales of a producer who sells online,
+  through its "Vente directe" path (dafter-cod DECISIONS, "Two channels").
+  A producer without dz_cod has no workflow on Sales Order. A second app
+  wanting its own order workflow would have to share this one.
+- **Custom DocPerm trade-off**: dz_core's delete locks and dz_cod's order
+  rights (dafter-cod DECISIONS, decision D1) use Custom DocPerm, so ERPNext's
+  later changes to those doctypes' standard permissions no longer reach a
+  site. Re-applied on every migrate; checked after each ERPNext update.
 - **No feature list means the base only** (20 October 2026): it meant
   "everything", so a client site made by hand, or restored on a new server
   without its site_config, had every paid option. Demo and test sites say

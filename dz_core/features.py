@@ -152,6 +152,27 @@ def boot(bootinfo):
 	bootinfo.dz_features = sorted(enabled())
 
 
+def keep_switched_off(doc, method=None):
+	"""Report and Print Format validate (hooks.py): one that belongs to a
+	feature not in this site's offer stays disabled. apply_features() disables
+	it; without this a System Manager could tick it back on in the form, and
+	Frappe runs a report as soon as it is not disabled (review of 27 October
+	2026, 4.5). apply_features() writes the flag directly, so it is not
+	stopped here."""
+	if doc.disabled:
+		return
+	key = "reports" if doc.doctype == "Report" else "print_formats"
+	on = enabled()
+	for name, feature in catalog().items():
+		if doc.name in feature.get(key, []) and name not in on:
+			frappe.throw(
+				_("{0} fait partie d'une fonction non incluse dans votre offre : il reste désactivé.").format(
+					doc.name
+				),
+				FeatureNotEnabled,
+			)
+
+
 # ------------------------------------------------------------ apply to records
 
 
