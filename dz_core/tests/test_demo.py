@@ -147,14 +147,16 @@ class TestPublicLink(IntegrationTestCase):
 	repo's password or System Manager."""
 
 	def test_demo_logins_get_the_new_password_and_lose_system_manager(self):
-		email = f"gerant@{frappe.local.site}"
+		# a domain of its own: CI's site is "test_site", and gerant@test_site is no e-mail address
+		domain = "demo-lien-public.test"
+		email = f"gerant@{domain}"
 		if not frappe.db.exists("User", email):
 			frappe.get_doc(
 				{"doctype": "User", "email": email, "first_name": "Gérant", "send_welcome_email": 0}
 			).insert(ignore_permissions=True)
 		frappe.get_doc("User", email).add_roles("System Manager", "Sales Manager")
 		password = "Lien-public-2026"
-		self.assertIn(email, secure_logins(password))
+		self.assertIn(email, secure_logins(password, domain=domain))
 		roles = frappe.get_roles(email)
 		self.assertNotIn("System Manager", roles)
 		self.assertIn("Sales Manager", roles)
