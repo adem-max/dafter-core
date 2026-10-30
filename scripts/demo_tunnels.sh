@@ -21,11 +21,12 @@ BENCH_DIR="${BENCH_DIR:-$HOME/frappe-bench}"
 LOGS="${LOGS:-$HOME/demo-tunnels}"
 # site:port
 DEMOS=("food-demo.localhost:8001" "atelier-demo.localhost:8002" "demo.localhost:8003")
-# The shop has only Administrator after its load: a demo login is added,
-# with the producer demos' password
+# The shop has only Administrator after its load: a demo login is added
 SHOP_SITE="demo.localhost"
 SHOP_LOGIN="gerant@demo.localhost"
-PASSWORD='Demo-2026!'
+# A new password at every start, set on every demo login of the three sites:
+# the repo is public, so a password written in it is no password on a public link
+PASSWORD=$(python3 -c "import secrets; print(secrets.token_urlsafe(12))")
 
 cd "$BENCH_DIR" || { echo "No bench at $BENCH_DIR"; exit 1; }
 mkdir -p "$LOGS"
@@ -61,10 +62,18 @@ if [ -f "sites/$SHOP_SITE/site_config.json" ] \
 		| grep -q "$SHOP_LOGIN"; then
 	echo "--- adding the login $SHOP_LOGIN to $SHOP_SITE"
 	bench --site "$SHOP_SITE" add-user "$SHOP_LOGIN" --first-name "Gérant" --password "$PASSWORD" \
-		--add-role "System Manager" --add-role "Sales Manager" --add-role "Sales User" \
+		--add-role "Sales Manager" --add-role "Sales User" \
 		--add-role "Stock Manager" --add-role "Stock User" \
 		--add-role "Accounts Manager" --add-role "Accounts User"
 fi
+
+# The new password on every demo login, and no demo login keeps System Manager
+for demo in "${DEMOS[@]}"; do
+	site="${demo%%:*}"
+	[ -f "sites/$site/site_config.json" ] || continue
+	bench --site "$site" execute dz_core.demo.loader.secure_logins --args "['$PASSWORD']" > /dev/null \
+		|| echo "--- $site: could not set the demo password, see the error above"
+done
 
 # A quick tunnel prints its link a few seconds after it starts
 echo "Waiting for the links..."
@@ -86,4 +95,5 @@ for demo in "${DEMOS[@]}"; do
 	link=$(grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' "$LOGS/tunnel-$port.log" | head -1)
 	printf "%-24s %s\n" "$site" "${link:-no link yet, see $LOGS/tunnel-$port.log}"
 done
-echo "Logins and password: docs/DEMO.md. Stop with: $0 stop"
+echo "Logins: docs/DEMO.md. Password for every demo login, until the next start: $PASSWORD"
+echo "Stop with: $0 stop"

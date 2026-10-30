@@ -8,7 +8,7 @@ frappe   (framework)
 erpnext  (stock, sales, purchases, manufacturing, accounting) - never edited
 dz_core  (this app: what every client gets)
 dz_cod   (optional, on top: orders, couriers and returns for online sellers)
-dz_hub   (private, the vendor's own site: clients, offers, billing; talks to dz_core)
+dz_hub   (vendor only, the hub site: clients, offers, billing; talks to dz_core)
 ```
 
 Pack Atelier = a site with `dz_core`.
@@ -107,9 +107,15 @@ stays in dz_cod and why, and the rule for new work.
 
 ```bash
 bench --site test.localhost set-config allow_tests true
-bench --site test.localhost run-tests --app dz_core     # 110 tests (15 unit + 95 integration)
+bench --site test.localhost run-tests --app dz_core
 ```
 
 The suite also passes on a site with ERPNext and dz_core only (the dev bench
 keeps `test-core.localhost` for that). Every push runs pre-commit and the tests
-on a fresh site on GitHub (`.github/workflows/ci.yml`).
+on a fresh site on GitHub (`.github/workflows/ci.yml`), plus dz_cod's tests on
+this dz_core, and weekly against Frappe's and ERPNext's version-16 branches:
+[![CI](https://github.com/adem-max/dafter-core/actions/workflows/ci.yml/badge.svg)](https://github.com/adem-max/dafter-core/actions/workflows/ci.yml).
+No test count here: it went stale with every change; CI's log has it.
+
+What changed release by release, across the three apps: `CHANGELOG.md` in the
+Daftar workspace (one file for the three, since they are released together).

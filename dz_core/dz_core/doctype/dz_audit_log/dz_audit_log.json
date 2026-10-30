@@ -15,7 +15,11 @@
   "user",
   "ip_address",
   "device",
-  "details"
+  "details",
+  "chain_section",
+  "seq",
+  "previous_hash",
+  "row_hash"
  ],
  "fields": [
   {
@@ -42,7 +46,8 @@
    "in_standard_filter": 1,
    "label": "Document",
    "options": "reference_doctype",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "company",
@@ -50,7 +55,8 @@
    "in_standard_filter": 1,
    "label": "Société",
    "options": "Company",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_main",
@@ -82,12 +88,38 @@
    "fieldtype": "Small Text",
    "label": "Détails",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "Chaque ligne porte l'empreinte de la précédente : une ligne modifiée ou retirée hors de Daftar se voit (books/audit_chain.py).",
+   "fieldname": "chain_section",
+   "fieldtype": "Section Break",
+   "label": "Chaîne d'empreintes"
+  },
+  {
+   "fieldname": "seq",
+   "fieldtype": "Int",
+   "label": "N° dans la chaîne",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "previous_hash",
+   "fieldtype": "Data",
+   "label": "Empreinte précédente",
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_hash",
+   "fieldtype": "Data",
+   "label": "Empreinte (SHA-256)",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-22 10:00:00.000000",
+ "modified": "2026-10-29 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "DZ Core",
  "name": "DZ Audit Log",

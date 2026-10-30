@@ -111,6 +111,7 @@ def attach(archive, name, content, description):
 @frappe.whitelist()
 def verify(archive):
 	"""[(file name, ok)]: each file's content against the hash taken when it was kept."""
+	frappe.has_permission("DZ Archive", "read", throw=True)  # before saying whether it exists
 	doc = frappe.get_doc("DZ Archive", archive)
 	doc.check_permission("read")
 	result = []
@@ -134,7 +135,10 @@ def make_archive(company, fiscal_year):
 	from dz_core.books.year_end import year_bounds
 
 	check_maker()
+	from dz_core.closing import check_company
+
 	frappe.has_permission("GL Entry", "read", throw=True)
+	check_company(company)
 	start, end = year_bounds(fiscal_year)
 	frozen = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
 	if not frozen or frappe.utils.getdate(frozen) < end:
@@ -171,9 +175,32 @@ def make_archive(company, fiscal_year):
 			tables.to_csv(audit_table(company, start, end)),
 			_("Journal d'audit"),
 		),
+		(
+			f"chaine-audit-{fiscal_year}.txt",
+			chain_record(company, end),
+			_("Dernière empreinte de la chaîne du journal d'audit"),
+		),
 	]
 	archive = keep(company, YEARLY, files, start, end, fiscal_year=fiscal_year)
 	return archive.name
+
+
+def chain_record(company, end):
+	"""The audit chain's last hash at the year end (books/audit_chain.py): kept
+	in the archive, whose register goes off-site, it proves the chain as it
+	stood then even against someone who could rewrite the database (decision
+	D3, 29 October 2026)."""
+	from dz_core.books.audit_chain import verify_chain
+
+	chain = verify_chain(company, until=f"{end} 23:59:59.999999")
+	lines = [
+		f"Société : {company}",
+		f"Au : {end}",
+		f"Lignes enchaînées : {chain['rows']}",
+		f"Chaîne intacte : {'oui' if chain['ok'] else 'NON, ' + str(chain['broken_at'])}",
+		f"Dernière empreinte (SHA-256) : {chain['head'] or '-'}",
+	]
+	return ("\n".join(lines) + "\n").encode("utf-8")
 
 
 def audit_table(company, start, end):

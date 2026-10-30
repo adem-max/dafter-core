@@ -56,8 +56,11 @@ def tax_tables(company, start, end):
 def make_closing_file(company, fiscal_year, draft=0):
 	"""Returns the DZ Archive's name: a new one, or the last one while nothing
 	moved in the books since (books/archive.py unchanged)."""
+	from dz_core.closing import check_company
+
 	check_maker()
 	frappe.has_permission("GL Entry", "read", throw=True)
+	check_company(company)
 	draft = int(draft or 0)
 	start, end = year_bounds(fiscal_year)
 	rows = year_checks(company, fiscal_year)

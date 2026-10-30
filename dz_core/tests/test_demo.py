@@ -10,9 +10,11 @@ Run: bench --site <site> run-tests --module dz_core.tests.test_demo
 import datetime
 import importlib
 
+import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
+from frappe.utils.password import check_password
 
-from dz_core.demo.loader import PROFILES
+from dz_core.demo.loader import PROFILES, secure_logins
 from dz_core.demo.planner import RAW_WAREHOUSE, Story, plan
 
 TODAY = datetime.date(2026, 10, 19)
@@ -138,3 +140,28 @@ class TestWilayas(IntegrationTestCase):
 			for customer in p.CUSTOMERS:
 				with self.subTest(profile=name, customer=customer["name"]):
 					self.assertTrue(find_wilaya(customer["wilaya"]))
+
+
+class TestPublicLink(IntegrationTestCase):
+	"""scripts/demo_tunnels.sh: on a public link, no demo login keeps the
+	repo's password or System Manager."""
+
+	def test_demo_logins_get_the_new_password_and_lose_system_manager(self):
+		# a domain of its own: CI's site is "test_site", and gerant@test_site is no e-mail address
+		domain = "demo-lien-public.test"
+		email = f"gerant@{domain}"
+		if not frappe.db.exists("User", email):
+			frappe.get_doc(
+				{"doctype": "User", "email": email, "first_name": "Gérant", "send_welcome_email": 0}
+			).insert(ignore_permissions=True)
+		frappe.get_doc("User", email).add_roles("System Manager", "Sales Manager")
+		password = "Lien-public-2026"
+		self.assertIn(email, secure_logins(password, domain=domain))
+		roles = frappe.get_roles(email)
+		self.assertNotIn("System Manager", roles)
+		self.assertIn("Sales Manager", roles)
+		self.assertEqual(check_password(email, password), email)
+
+	def test_a_short_password_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			secure_logins("court")

@@ -13,6 +13,7 @@ from dz_core.books.export import as_text, entry_rows, export_entries, opening_li
 from dz_core.books.journals import journal_of, treasury_journals
 from dz_core.setup.accounts import account_by_number
 from dz_core.setup.scf import apply_scf_setup
+from dz_core.tests.helpers import user_with_roles
 from dz_core.tests.test_core import ensure_prepared
 
 
@@ -130,28 +131,13 @@ class TestBooks(IntegrationTestCase):
 
 	def test_an_archive_needs_an_accounts_manager(self):
 		"""Reading the ledger is not enough: an archive is kept ten years, never deleted."""
-		user = frappe.db.exists("User", "lecteur@test.dz") or (
-			frappe.get_doc(
-				{
-					"doctype": "User",
-					"email": "lecteur@test.dz",
-					"first_name": "Lecteur",
-					"send_welcome_email": 0,
-					"roles": [{"role": "Accounts User"}],
-				}
-			)
-			.insert(ignore_permissions=True)
-			.name
-		)
+		user = user_with_roles("Accounts User")
 		self.assertTrue(frappe.has_permission("GL Entry", "read", user=user))
-		frappe.set_user(user)
-		try:
+		with self.set_user(user):
 			with self.assertRaises(frappe.PermissionError):
 				export_entries(self.company, today(), today())
 			with self.assertRaises(frappe.PermissionError):
 				archives.make_archive(self.company, get_fiscal_year(today(), company=self.company)[0])
-		finally:
-			frappe.set_user("Administrator")
 
 	def test_text_layout(self):
 		rows = entry_rows(self.company, today(), today())

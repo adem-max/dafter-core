@@ -73,9 +73,12 @@ def year_figures(company, fiscal_year=None, regime=None):
 	charge = frappe.db.get_value("Account", {"company": company, "account_number": CHARGE, "is_group": 0})
 	booked = (
 		flt(
+			# not the closing voucher, which empties 6428 at the year end: once the
+			# year was closed, the IFU booked read 0 (review of 27 October 2026, 1.1)
 			frappe.db.sql(
 				"""SELECT SUM(debit - credit) FROM `tabGL Entry` WHERE company = %s AND account = %s
-				AND is_cancelled = 0 AND posting_date BETWEEN %s AND %s""",
+				AND is_cancelled = 0 AND posting_date BETWEEN %s AND %s
+				AND voucher_type != 'Period Closing Voucher'""",
 				(company, charge, start, end),
 			)[0][0]
 		)
@@ -150,7 +153,11 @@ def ifu_remark(fiscal_year):
 @frappe.whitelist()
 def book_ifu(company, fiscal_year):
 	"""Dr 6428 / Cr 4477 for the year's IFU not booked yet. Returns the entry."""
+	from dz_core.closing import check_company, closing_key, lock_company
+
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
+	lock_company(company)  # two clicks would both see nothing booked yet
 	settings = frappe.get_single("DZ Core Settings")
 	f = year_figures(company, fiscal_year, settings.tax_regime if settings.company == company else None)
 	amount = flt(f.due - f.booked, 2)
@@ -167,6 +174,7 @@ def book_ifu(company, fiscal_year):
 			"company": company,
 			"posting_date": min(f.end, getdate(today())),
 			"user_remark": ifu_remark(fiscal_year),
+			"dz_closing_key": closing_key("ifu", fiscal_year=fiscal_year),
 			"accounts": [
 				{
 					"account": accounts[CHARGE],

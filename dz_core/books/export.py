@@ -264,7 +264,10 @@ def export_entries(company, from_date, to_date):
 	from dz_core.books.archive import EXPORT, check_maker, keep, unchanged
 
 	check_maker()
+	from dz_core.closing import check_company
+
 	frappe.has_permission("GL Entry", "read", throw=True)
+	check_company(company)
 	from_date, to_date = getdate(from_date), getdate(to_date)
 	if from_date > to_date:
 		frappe.throw(_("La date de début est après la date de fin."))

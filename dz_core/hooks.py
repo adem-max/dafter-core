@@ -94,6 +94,14 @@ doc_events = {
 	"Company": {"on_update": "dz_core.books.audit.log_frozen_date"},
 	# archived files stay (books/archive.py)
 	"File": {"on_trash": "dz_core.books.archive.protect_file"},
+	# a report or print format of a feature switched off stays disabled (features.py)
+	"Report": {"validate": "dz_core.features.keep_switched_off"},
+	"Print Format": {"validate": "dz_core.features.keep_switched_off"},
+	# a suspended client reads and exports, saves nothing (suspension.py)
+	"*": {
+		event: "dz_core.suspension.check"
+		for event in ("before_validate", "before_submit", "before_cancel", "on_trash")
+	},
 }
 
 # montant() and montant_en_lettres() in print formats (dz_core/utils.py)

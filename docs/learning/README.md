@@ -21,7 +21,7 @@ frappe    framework: doctypes, forms, permissions, REST API, jobs      (never ed
 erpnext   stock, sales, purchases, manufacturing, accounting           (never edited)
 dz_core   repo dafter-core   every client (Pack Atelier)               public
 dz_cod    repo dafter-cod    online sellers (Pack Vente en ligne)      public, needs dz_core
-dz_hub    repo dz_adm        the vendor's own site                     private, only on the hub site
+dz_hub    repo dz_adm        the vendor's own site                     public, only on the hub site
 ```
 
 - A **producer** site has ERPNext + dz_core.

@@ -18,8 +18,9 @@ from frappe import _
 from frappe.utils import flt, getdate
 
 from dz_core.books.archive import CLOSING_FILE, YEARLY
+from dz_core.books.audit_chain import verify_chain
 from dz_core.books.tables import stock_gap
-from dz_core.closing import OK, closing_rows, row
+from dz_core.closing import OK, check_company, closing_rows, row
 from dz_core.tax_checks import informal_purchases
 
 # checks that must be OK before the year is closed (accounts that must be
@@ -96,6 +97,19 @@ def year_checks(company, fiscal_year):
 			abs(gap) < 1,
 			_("Un mouvement de stock n'est pas passé en comptabilité : voyez avec le comptable."),
 			code="stock",
+		)
+	)
+	# the audit trail as it stood at the year end must be untouched (books/audit_chain.py)
+	chain = verify_chain(company, until=f"{end} 23:59:59.999999")
+	rows.append(
+		row(
+			_("Journal d'audit intact ({0} lignes enchaînées)").format(chain["rows"]),
+			0,
+			chain["ok"],
+			_("Le journal d'audit a été modifié hors de Daftar ({0}) : voyez avec votre fournisseur.").format(
+				chain["broken_at"]
+			),
+			code="audit",
 		)
 	)
 	informal = informal_purchases(company, start, end)
@@ -180,6 +194,7 @@ def refuse_if(rows, what):
 def close_year(company, fiscal_year):
 	"""Close the year (see the module docstring). Returns {"status", "message"}."""
 	frappe.has_permission("Period Closing Voucher", "create", throw=True)
+	check_company(company)
 	start, end = year_bounds(fiscal_year)
 	if closing_voucher(company, end):
 		frappe.throw(_("L'exercice {0} est déjà clôturé.").format(fiscal_year))

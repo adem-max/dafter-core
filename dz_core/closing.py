@@ -54,8 +54,13 @@ def accounts_by_prefix(company, prefix):
 	)
 
 
-def balance(company, accounts, until, since=None, exclude_vouchers=()):
-	"""Debit minus credit on the accounts, up to `until` (from `since` when given)."""
+def balance(company, accounts, until, since=None, exclude_vouchers=(), exclude_closing=False):
+	"""Debit minus credit on the accounts, up to `until` (from `since` when given).
+
+	exclude_closing: leave out the Period Closing Voucher, which empties the
+	income and expense accounts (classes 6 and 7) on the year-end date. For a
+	figure of the year's own movements only: a balance read from the very
+	beginning must keep it, or every closed year would count again."""
 	if not accounts:
 		return 0
 	conditions = [
@@ -66,6 +71,8 @@ def balance(company, accounts, until, since=None, exclude_vouchers=()):
 	]
 	if since:
 		conditions.append("posting_date >= %(since)s")
+	if exclude_closing:
+		conditions.append("voucher_type != 'Period Closing Voucher'")
 	if exclude_vouchers:
 		conditions.append("voucher_no NOT IN %(exclude)s")
 	return flt(
@@ -151,11 +158,21 @@ def closing_rows(company, month):
 	year_start = frappe.db.get_value(
 		"Fiscal Year", {"year_start_date": ["<=", end], "year_end_date": [">=", end]}, "year_start_date"
 	) or get_first_day(end).replace(month=1)
-	production = -balance(company, accounts_by_prefix(company, PRODUCTION), end, since=year_start)
+	# The year's own movements: once the year is closed, its closing voucher
+	# empties class 72 on the year-end date, and the check would turn "À voir"
+	# and block the closing file (review of 27 October 2026, 1.1)
+	production = -balance(
+		company, accounts_by_prefix(company, PRODUCTION), end, since=year_start, exclude_closing=True
+	)
 	openings = opening_vouchers(company)
 	stock_change = sum(
 		balance(
-			company, accounts_by_prefix(company, prefix), end, since=year_start, exclude_vouchers=openings
+			company,
+			accounts_by_prefix(company, prefix),
+			end,
+			since=year_start,
+			exclude_vouchers=openings,
+			exclude_closing=True,
 		)
 		for prefix in STOCKS_OF_PRODUCTS
 	)
@@ -270,16 +287,43 @@ def srbnb_debits(company, until):
 	return {supplier: amount for supplier, amount in balances.items() if amount > 0.01}
 
 
+def closing_key(kind, day=None, fiscal_year=None):
+	"""The fixed key of an entry made once a period (Journal Entry
+	dz_closing_key): "tva:2026-10" for the month of `day`, "ifu:2026" for a
+	fiscal year. Looked up by it, never by the remark, which is translated."""
+	return f"{kind}:{fiscal_year or getdate(day).strftime('%Y-%m')}"
+
+
+def closing_entries(company, key):
+	"""The submitted entries carrying this key (a cancelled one can be made again)."""
+	return frappe.get_all(
+		"Journal Entry", filters={"company": company, "docstatus": 1, "dz_closing_key": key}, pluck="name"
+	)
+
+
+def check_company(company):
+	"""The user may read this company: a User Permission that keeps them to
+	another company is respected by every closing button, not just the forms
+	(review of 27 October 2026, 2.6)."""
+	if not company or not frappe.db.exists("Company", company):
+		frappe.throw(_("Société inconnue : {0}").format(company))
+	frappe.has_permission("Company", "read", doc=company, throw=True)
+
+
+def lock_company(company):
+	"""Two clicks on the same button run one after the other: a row lock on the
+	Company until the request commits, before checking whether the entry exists."""
+	frappe.db.get_value("Company", company, "name", for_update=True)
+
+
 def srbnb_remark(end):
 	return _("Reclassement 4081 vers 4097 au {0}").format(getdate(end).strftime("%d/%m/%Y"))
 
 
 def srbnb_reclassification(company, end):
 	"""The month's reclassification entry, if it was posted."""
-	return frappe.db.get_value(
-		"Journal Entry",
-		{"company": company, "docstatus": 1, "posting_date": end, "user_remark": srbnb_remark(end)},
-	)
+	found = closing_entries(company, closing_key("srbnb", end))
+	return found[0] if found else None
 
 
 @frappe.whitelist()
@@ -287,7 +331,9 @@ def reclassify_srbnb(company, month):
 	"""Dr 4097 / Cr 4081 at the month end for the suppliers' debit balances,
 	reversed on the 1st of the next month. Returns the two entries."""
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
 	_start, end = month_bounds(month)
+	lock_company(company)
 	if srbnb_reclassification(company, end):
 		frappe.throw(_("Le 4081 de ce mois est déjà reclassé."))
 	debits = srbnb_debits(company, end)
@@ -296,12 +342,19 @@ def reclassify_srbnb(company, month):
 	srbnb, target = accounts_of(company, SRBNB)[0], accounts_of(company, SUPPLIER_DEBITS)[0]
 	remark = srbnb_remark(end)
 	names = []
-	for posting_date, debit_account, credit_account in (
-		(end, target, srbnb),
-		(add_days(end, 1), srbnb, target),
+	for posting_date, debit_account, credit_account, kind in (
+		(end, target, srbnb, "srbnb"),
+		(add_days(end, 1), srbnb, target, "srbnb-reversal"),
 	):
 		entry = frappe.new_doc("Journal Entry")
-		entry.update({"company": company, "posting_date": posting_date, "user_remark": remark})
+		entry.update(
+			{
+				"company": company,
+				"posting_date": posting_date,
+				"user_remark": remark,
+				"dz_closing_key": closing_key(kind, end),
+			}
+		)
 		for supplier, amount in debits.items():
 			entry.append(
 				"accounts",
@@ -359,11 +412,7 @@ def settlement_remark(end):
 def tva_figures(company, month):
 	"""The month's TVA: bases per rate, collected, deductible, credit, result."""
 	start, end = month_bounds(month)
-	settlement = frappe.get_all(
-		"Journal Entry",
-		filters={"company": company, "docstatus": 1, "user_remark": settlement_remark(end)},
-		pluck="name",
-	)
+	settlement = closing_entries(company, closing_key("tva", end))
 
 	def movement(number):
 		return balance(company, accounts_of(company, number), end, since=start, exclude_vouchers=settlement)
@@ -427,6 +476,8 @@ def make_tva_settlement(company, month):
 	credit carried, and what is to pay on the G50 (44551) or the new credit
 	(44568). Once per month."""
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
+	lock_company(company)
 	f = tva_figures(company, month)
 	if f.settlement:
 		frappe.throw(_("La TVA de ce mois est déjà liquidée : {0}.").format(f.settlement))
@@ -444,7 +495,14 @@ def make_tva_settlement(company, month):
 		(PAYABLE, -f.to_pay),
 	]
 	entry = frappe.new_doc("Journal Entry")
-	entry.update({"company": company, "posting_date": f.end, "user_remark": settlement_remark(f.end)})
+	entry.update(
+		{
+			"company": company,
+			"posting_date": f.end,
+			"user_remark": settlement_remark(f.end),
+			"dz_closing_key": closing_key("tva", f.end),
+		}
+	)
 	for number, amount in lines:
 		amount = flt(amount, 2)
 		if amount:

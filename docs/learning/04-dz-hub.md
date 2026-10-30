@@ -1,4 +1,4 @@
-# 04 dz_hub (repo dz_adm, private)
+# 04 dz_hub (repo dz_adm)
 
 The vendor's own site to manage every Daftar client: who they are, which
 site is theirs, what they pay for (packs and options), their monthly

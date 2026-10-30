@@ -40,12 +40,21 @@ def with_hooks(names, hook):
 	return names + [name for name in frappe.get_hooks(hook) if name not in names]
 
 
-def summary():
+def summary(until=None):
+	"""`until` (the backup's time): count only what existed then. The live site
+	keeps working after its backup, so restore_test.sh compares the copy with
+	the live site *as it was at the backup*: the copy must hold at least that
+	much (review of 20 October 2026, 3.2: a copy that lost 90 % of the invoices
+	used to pass, as only "more than live" or "zero" failed)."""
+	filters = {"creation": ["<=", until]} if until else {}
 	result = {
-		doctype: frappe.db.count(doctype) for doctype in with_hooks(COUNTED, "dz_restore_check_counted")
+		doctype: frappe.db.count(doctype, filters)
+		for doctype in with_hooks(COUNTED, "dz_restore_check_counted")
 	}
 	for doctype in with_hooks(LAST, "dz_restore_check_last"):
-		last = frappe.get_all(doctype, fields=["creation"], order_by="creation desc", limit=1)
+		last = frappe.get_all(
+			doctype, filters=filters, fields=["creation"], order_by="creation desc", limit=1
+		)
 		result[f"last {doctype}"] = str(last[0].creation) if last else ""
 	result["passwords"], result["passwords_unreadable"] = check_passwords()
 	return result

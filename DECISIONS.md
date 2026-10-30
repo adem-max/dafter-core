@@ -121,6 +121,28 @@ Why dz_core is built the way it is. Same rules as dz_cod's DECISIONS.md.
   Each app declares its own features with a `dz_features` hook pointing at
   a dict; dz_core has none of its own yet. The old key `dz_cod_features` is
   still read and moved on migrate; `dz-cod-features` stays as an alias.
+- **How firm a switched-off feature is** (29 October 2026, review of 27
+  October, 4.4 and 4.5). The list lives in site_config, which nobody changes
+  from the browser. A switched-off report or print format is disabled, and
+  Frappe refuses to run a disabled report. Re-enabling it in the form:
+  Frappe already refuses any change to a standard report outside developer
+  mode, but not to a print format; `features.keep_switched_off` (Report and
+  Print Format validate) refuses both, in developer mode too. Whitelisted
+  methods carry `@requires_feature`, so a URL called by hand is refused the
+  same way. **Limits:** hiding a button in the browser is no gate (the
+  server checks are); someone with server access (bench, site_config) can
+  switch anything on, which is why clients are never System Manager and
+  never get server access (DEPLOY.md).
+- **One workflow covers every Sales Order of a site** (review of 27
+  October, 4.4): Frappe allows one active Workflow per doctype, so dz_cod's
+  COD workflow also carries the direct sales of a producer who sells online,
+  through its "Vente directe" path (dafter-cod DECISIONS, "Two channels").
+  A producer without dz_cod has no workflow on Sales Order. A second app
+  wanting its own order workflow would have to share this one.
+- **Custom DocPerm trade-off**: dz_core's delete locks and dz_cod's order
+  rights (dafter-cod DECISIONS, decision D1) use Custom DocPerm, so ERPNext's
+  later changes to those doctypes' standard permissions no longer reach a
+  site. Re-applied on every migrate; checked after each ERPNext update.
 - **No feature list means the base only** (20 October 2026): it meant
   "everything", so a client site made by hand, or restored on a new server
   without its site_config, had every paid option. Demo and test sites say
@@ -301,6 +323,16 @@ tax office (doc section 9).
   "Accounts Frozen Till Date").
 - **No production reclassification entry**: each manufacture posts
   materials consumed (60x) and production stocked (72) itself (`production.py`).
+- **Entries made once a period carry a key** (29 October 2026, review of
+  27 October, 2.5): the TVA settlement, the 4081 reclassification and its
+  reversal, the TVA given back on losses and the IFU entry are found by Journal
+  Entry `dz_closing_key` (`tva:2026-10`, `ifu:2026`), no longer by their
+  remark. The remark is translated (`_()`), so once translations exist a user
+  in another language would not find the month's settlement and could settle
+  it twice; and a remark typed by hand on any entry counted as the
+  settlement. Each button also locks the Company row first, so two clicks run
+  one after the other. Patch `closing_keys` gives older entries their key from
+  their French remark.
 
 ## Compliance (22 October 2026)
 
@@ -319,6 +351,22 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   year's first day gets virtual "AN" lines (art. 14).
 - **Our own audit trail, DZ Audit Log**: ERPNext's Activity Log is pruned
   after 90 days and its Version log has no IP or workstation (art. 18).
+- **The audit trail is a hash chain** (29 October 2026, review of 27
+  October, 4.3; D3 as proposed): each row has its number in its company's
+  chain, the previous row's hash and its own (SHA-256 of that and the row's
+  content, time included), set when the row is written
+  (`books/audit_chain.py`). `verify_chain` finds a row changed, removed or
+  slipped in; "Exercice comptable" shows it, and an untouched chain is needed
+  for the closing file. One chain per company (the demo wipe deletes a
+  company's rows). **Limits:** someone with direct database access can
+  recompute a whole chain, so the yearly archive keeps the chain's last hash
+  at the year end (`chaine-audit-<year>.txt`, in the register kept
+  off-site); writes are ordered by a lock on the Company row and a locking
+  read of the tail, so audit rows of one company are written one after the
+  other (two validations at the same moment wait for each other at that
+  last step; a deadlock with another lock taken after it is possible, and
+  MariaDB would then refuse one of the two). Concurrency is not tested with
+  two real connections. Patch `chain_audit_log` chains older rows by date.
 - **Archives are kept with SHA-256 hashes** (DZ Archive, `sha256sum`
   register): made only by code, never changed, never deleted, nor their
   files; the demo wipes alone forget them. Ten years (CPF art. 64) through
@@ -340,13 +388,36 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   accountant's closing file (refused while a check fails, or a marked
   draft), the yearly archive (frozen year only). The allocation of the
   result stays a journal entry after the owners' decision. A year is never
-  closed on a test site: it would block posting in it.
+  closed on a test site: it would block posting in it. **After the close**
+  (29 October 2026, review of 27 October, 1.1): the closing voucher empties
+  classes 6 and 7 on the year-end date, so a figure of the year's own
+  movements leaves it out (`closing.balance(exclude_closing=True)` for the
+  class 72 check, the IFU booked): the 72 check turned "À voir" and refused
+  the closing file, and the IFU booked read 0. Balances read from the very
+  beginning keep it, or every closed year would count again. Tested with
+  closing-voucher lines written in a rolled-back test, not a real voucher.
 - **Opening from the trial balance** (`imports/opening.py`): open invoices
   through ERPNext's Opening Invoice Creation Tool's builder but inserted by
   us, all or nothing (the tool itself swallows errors), dated the opening
   day; stock from the import workbook's count; one "Écritures d'à-nouveaux"
   entry; 479 must end at zero or nothing is posted. Existing fixed assets
-  are entered by hand.
+  are entered by hand. **Advances** (29 October 2026, review of 27 October,
+  2.2): only the receivable and payable accounts invoices post to (the
+  company's defaults, the accounts on parties and their groups) are compared
+  with the open invoices. Others of those types, 4191 advances received and
+  40913 advances paid, go to the à-nouveaux entry with the party named in the
+  Balance sheet's optional "Tiers" column, one line per party: ERPNext refuses
+  such a line without its party, and a workshop holding customers' deposits
+  could not be opened before.
+- **Every closing button checks the company and the ledger right** (29
+  October 2026, review of 27 October, 1.3 and 2.6): `closing.check_company`
+  (the user may read that Company, User Permissions respected) on the TVA,
+  4081, IFU, year-end, export, archive and closing-file buttons, and
+  `result_not_closed` (called by ERPNext's bilan, so reachable by URL) now
+  wants GL Entry read: a production worker's login could read the year's
+  result. `tests/test_endpoints.py` lists every whitelisted function, read
+  from the source, and calls each as a portal user: a new endpoint fails the
+  test until it is listed there.
 - **The 2027 commitment is a draft** (docs/ENGAGEMENT-EDITEUR.md) that claims
   only what the software does, as the advice says; signed by Daftar once a
   registered entity, revised when the arrêté is published.
@@ -554,7 +625,44 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   only to its owner (Administrator, who ran the load) or to users who can
   read what it is attached to.
 - **Demo logins share one password** (`Demo-2026!`), written in docs/DEMO.md:
-  demo sites hold only invented data.
+  demo sites hold only invented data. **On a public link it is replaced**
+  (29 October 2026, review of 27 October, 3.4): the repo is public, so
+  `scripts/demo_tunnels.sh` sets a new random password on every demo login at
+  each start and prints it, and takes System Manager away from any demo login
+  (`loader.secure_logins`): a visitor could otherwise change the site's
+  settings, features and users. The tunnels keep `bench serve`, not gunicorn:
+  without nginx in front, gunicorn serves no `/assets` (CSS, JS), and
+  Werkzeug 3's debugger answers only requests addressed to the PC's own names
+  (a tunnel's are `*.trycloudflare.com`), behind a PIN.
 - **A load takes about 20 minutes on the WSL bench** (code on the Windows
   disk), against the 10 planned. Acceptable for a demo built once and topped
   up later; to be measured again on the server.
+
+## Operations (29 October 2026, reviews of 20 and 27 October)
+
+- **No password on a command line.** `dz_core/secret_bench.py` runs a bench
+  command with `--db-root-password` / `--admin-password` taken from its
+  environment and added to its own `sys.argv` in memory: `ps` and
+  /proc/<pid>/cmdline show every process's arguments to every local user,
+  the environment only to the same user and root. The hub's "Créer le site"
+  and the restore drill use it; DEPLOY.md adds `hidepid=2` for other tools.
+  Not a separate file of secrets: the hub already keeps the root password
+  encrypted in DZ Hub Settings, and a file would be one more copy.
+- **Off-site backups leave encrypted or not at all**: `backup_offsite.sh`
+  refuses a remote that is not an rclone `crypt` remote (`ALLOW_PLAIN_REMOTE=1`
+  for one encrypted another way). Not Frappe's `backup_encryption_key`: that
+  would also encrypt the local backups the restore drill reads, and rclone
+  crypt covers every file, the site config included.
+- **A suspended client keeps read access to their books** (review of 27
+  October, 3.5; decision D2 by Adem): `suspension.py`, a doc_events "*" lock
+  on save, submit, cancel and delete while site_config has `dz_suspended`
+  (set by the hub's *Suspendre*, with the scheduler paused). Logs, the audit
+  trail and background report runs stay allowed. Not Frappe's maintenance
+  mode: it shuts the client out, and its read-only variant refuses the login
+  itself, which writes a session (tried 30 October 2026). The client must be
+  able to consult their books for ten years. Limit: a write that skips
+  documents (db_set, SQL in code) is not stopped.
+- **The restore drill cannot act on the real world, and catches a loss**:
+  scheduler paused and e-mails muted on the copy; the live site counted as it
+  was at the backup's time (`restore_check.summary(until=)`), and the copy
+  must hold at least that much.

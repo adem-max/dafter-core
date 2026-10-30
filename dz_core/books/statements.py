@@ -235,8 +235,16 @@ def result_not_closed(filters=None, periods=None, row=None):
 	120 / 129, i.e. after the last Period Closing Voucher up to the period's
 	end. Not an account row: ERPNext's engine leaves out a closing voucher's
 	reversal of classes 6 and 7 (it keeps only its 12x line), so classes 6
-	and 7 would still carry closed years and the result would count twice."""
+	and 7 would still carry closed years and the result would count twice.
+
+	Whitelisted because ERPNext's report engine calls it for that row, so a
+	logged-in user could also call it by its URL: it answers only a user who
+	may read the ledger of that company (review of 27 October 2026, 1.3)."""
+	from dz_core.closing import check_company
+
 	filters = frappe._dict(frappe.parse_json(filters) if isinstance(filters, str) else filters or {})
+	frappe.has_permission("GL Entry", "read", throw=True)
+	check_company(filters.company)
 	values = []
 	for period in periods or []:
 		closed = frappe.db.get_value(

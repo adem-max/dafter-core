@@ -212,8 +212,15 @@ bench setup nginx && sudo systemctl reload nginx
    rclone lsd offsite:      # check: lists the buckets/folders of the remote
    ```
 
-   For extra safety choose an rclone **crypt** remote on top: backups are then
-   encrypted before they leave the server.
+   **The `offsite` remote must be an rclone `crypt` remote** on top of the
+   storage (29 October 2026): the backups hold the clients' customers (personal
+   data, law 18-07) and each site's `encryption_key`, so they leave the server
+   encrypted. Make the storage remote first (say `storage`), then
+   `rclone config` → n → name `offsite` → type `crypt` → remote
+   `storage:erp-backups` → a generated password and salt, **saved in your
+   password manager** (without them the backups cannot be read). The script
+   refuses any other remote and says so; `ALLOW_PLAIN_REMOTE=1` lifts that
+   only for a storage you encrypt another way.
 
 2. Install the script shipped with dz_core and schedule it at 02:30 every night:
 
@@ -266,6 +273,16 @@ DBPASS='...' ~/restore_test.sh erp.client1.com                # from the local b
 rclone copy offsite:erp-backups/$(hostname)/erp.client1.com/ /tmp/restore/ --max-age 48h
 DBPASS='...' ~/restore_test.sh erp.client1.com /tmp/restore   # from the OFF-SITE copy (the real test)
 ```
+
+Since 29 October 2026 (reviews of 20 and 27 October): `DBPASS` reaches bench
+through the environment (`dz_core/secret_bench.py`), never a command line
+(`ps` shows any process's arguments to every local user); the copy runs with
+its scheduler paused and e-mails muted, so it cannot sync a courier with the
+client's keys or send mail; the live site is compared **as it was at the
+backup's time**, and the copy must hold at least that much (before, only
+"more than live" or "nothing" failed, so a copy that lost most invoices
+passed); `.tar` file backups (Frappe 16 without `--compress`) are accepted.
+Run end to end on the WSL bench on 30 October 2026 (`RESTORE TEST OK`).
 
 It ends with `RESTORE TEST OK` or `RESTORE TEST FAILED: <what>`. On 15 Oct 2026
 it restored the demo from its off-site copy (200 orders, 1,625 stock ledger
@@ -368,6 +385,10 @@ Major upgrades (v16 → v17) are a project: test on a copy of each site first.
 - [ ] Two-factor authentication for System Managers (System Settings → Login → Enable Two Factor Auth).
 - [ ] `developer_mode` and `allow_tests` are **off** in production (`bench --site all show-config`; dev and test settings belong to your laptop).
 - [ ] MariaDB and Redis listen on localhost only (default on Ubuntu; check `sudo ss -tlnp`).
+- [ ] Other users cannot see your processes: `/proc` mounted with `hidepid=2`
+      (`/etc/fstab`: `proc /proc proc defaults,hidepid=2 0 0`, then
+      `sudo mount -o remount /proc`). Daftar's scripts and the hub never put a
+      password on a command line, but other tools might.
 - [ ] HTTPS on every site; renewal cron in place (`sudo crontab -l`).
 - [ ] Backups run every night, are copied off the server, and a restore was tested this month.
 - [ ] **No client data in git**: never commit `sites/`, `site_config.json`, backups, exports or screenshots with client data. The repo's `.gitignore` blocks the usual files; check `git status` before each commit.
