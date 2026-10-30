@@ -9,6 +9,10 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
+    # Imported by dz_core; Frappe ships them today, declared so a Frappe that
+    # stops shipping one cannot break dz_core silently (review of 27 October 2026, 5.1)
+    "num2words>=0.5",   # amounts in French words (utils.py)
+    "openpyxl>=3.1",    # the import workbooks and the closing file
 ]
 
 [build-system]
@@ -21,7 +25,7 @@ build-backend = "flit_core.buildapi"
 
 # These apt dependencies will be installed from Ubuntu repositories when you host your app on Frappe Cloud
 [deploy.dependencies.apt]
-packages = []
+packages = ["wkhtmltopdf"]  # PDFs of the closing file and the yearly archive
 
 [tool.ruff]
 line-length = 110
