@@ -364,6 +364,15 @@ docs/COMPLIANCE.md maps decree 09-110 article by article.
   Balance sheet's optional "Tiers" column, one line per party: ERPNext refuses
   such a line without its party, and a workshop holding customers' deposits
   could not be opened before.
+- **Every closing button checks the company and the ledger right** (29
+  October 2026, review of 27 October, 1.3 and 2.6): `closing.check_company`
+  (the user may read that Company, User Permissions respected) on the TVA,
+  4081, IFU, year-end, export, archive and closing-file buttons, and
+  `result_not_closed` (called by ERPNext's bilan, so reachable by URL) now
+  wants GL Entry read: a production worker's login could read the year's
+  result. `tests/test_endpoints.py` lists every whitelisted function, read
+  from the source, and calls each as a portal user: a new endpoint fails the
+  test until it is listed there.
 - **The 2027 commitment is a draft** (docs/ENGAGEMENT-EDITEUR.md) that claims
   only what the software does, as the advice says; signed by Daftar once a
   registered entity, revised when the arrêté is published.

@@ -284,6 +284,15 @@ def closing_entries(company, key):
 	)
 
 
+def check_company(company):
+	"""The user may read this company: a User Permission that keeps them to
+	another company is respected by every closing button, not just the forms
+	(review of 27 October 2026, 2.6)."""
+	if not company or not frappe.db.exists("Company", company):
+		frappe.throw(_("Société inconnue : {0}").format(company))
+	frappe.has_permission("Company", "read", doc=company, throw=True)
+
+
 def lock_company(company):
 	"""Two clicks on the same button run one after the other: a row lock on the
 	Company until the request commits, before checking whether the entry exists."""
@@ -305,6 +314,7 @@ def reclassify_srbnb(company, month):
 	"""Dr 4097 / Cr 4081 at the month end for the suppliers' debit balances,
 	reversed on the 1st of the next month. Returns the two entries."""
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
 	_start, end = month_bounds(month)
 	lock_company(company)
 	if srbnb_reclassification(company, end):
@@ -449,6 +459,7 @@ def make_tva_settlement(company, month):
 	credit carried, and what is to pay on the G50 (44551) or the new credit
 	(44568). Once per month."""
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
 	lock_company(company)
 	f = tva_figures(company, month)
 	if f.settlement:

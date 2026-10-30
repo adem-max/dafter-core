@@ -19,7 +19,7 @@ from frappe.utils import flt, getdate
 
 from dz_core.books.archive import CLOSING_FILE, YEARLY
 from dz_core.books.tables import stock_gap
-from dz_core.closing import OK, closing_rows, row
+from dz_core.closing import OK, check_company, closing_rows, row
 from dz_core.tax_checks import informal_purchases
 
 # checks that must be OK before the year is closed (accounts that must be
@@ -180,6 +180,7 @@ def refuse_if(rows, what):
 def close_year(company, fiscal_year):
 	"""Close the year (see the module docstring). Returns {"status", "message"}."""
 	frappe.has_permission("Period Closing Voucher", "create", throw=True)
+	check_company(company)
 	start, end = year_bounds(fiscal_year)
 	if closing_voucher(company, end):
 		frappe.throw(_("L'exercice {0} est déjà clôturé.").format(fiscal_year))

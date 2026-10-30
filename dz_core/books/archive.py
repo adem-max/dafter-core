@@ -111,6 +111,7 @@ def attach(archive, name, content, description):
 @frappe.whitelist()
 def verify(archive):
 	"""[(file name, ok)]: each file's content against the hash taken when it was kept."""
+	frappe.has_permission("DZ Archive", "read", throw=True)  # before saying whether it exists
 	doc = frappe.get_doc("DZ Archive", archive)
 	doc.check_permission("read")
 	result = []
@@ -134,7 +135,10 @@ def make_archive(company, fiscal_year):
 	from dz_core.books.year_end import year_bounds
 
 	check_maker()
+	from dz_core.closing import check_company
+
 	frappe.has_permission("GL Entry", "read", throw=True)
+	check_company(company)
 	start, end = year_bounds(fiscal_year)
 	frozen = frappe.db.get_value("Company", company, "accounts_frozen_till_date")
 	if not frozen or frappe.utils.getdate(frozen) < end:

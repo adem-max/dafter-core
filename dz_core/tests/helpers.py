@@ -1,6 +1,35 @@
 """Helpers shared by dz_core's tests and the apps on top (dz_cod imports them)."""
 
+import ast
+import os
+
 import frappe
+
+
+def whitelisted(app):
+	"""Dotted paths of the app's module-level functions under @frappe.whitelist,
+	read from the source. The endpoint sweeps (test_endpoints) fail when one is
+	not listed there, so nobody adds an endpoint without saying how it is
+	protected. Doctype methods are left out: Frappe checks the document's
+	permission before running them."""
+	root = frappe.get_app_path(app)
+	found = set()
+	for folder, _dirs, files in os.walk(root):
+		if f"{os.sep}tests" in folder:
+			continue
+		for name in files:
+			if not name.endswith(".py"):
+				continue
+			path = os.path.join(folder, name)
+			with open(path, encoding="utf-8") as handle:
+				tree = ast.parse(handle.read())
+			module = app + "." + os.path.relpath(path, root)[:-3].replace(os.sep, ".")
+			for node in tree.body:
+				if isinstance(node, ast.FunctionDef) and any(
+					"whitelist" in ast.unparse(decorator) for decorator in node.decorator_list
+				):
+					found.add(f"{module}.{node.name}")
+	return found
 
 
 def user_with_roles(*roles):

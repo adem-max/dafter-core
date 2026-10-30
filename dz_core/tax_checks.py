@@ -153,9 +153,10 @@ def tva_reversal_entry(company, end):
 @frappe.whitelist()
 def make_tva_reversal(company, month):
 	"""Dr each issue's expense account / Cr 44566, dated the month end, once a month."""
-	from dz_core.closing import closing_key, lock_company, month_bounds
+	from dz_core.closing import check_company, closing_key, lock_company, month_bounds
 
 	frappe.has_permission("Journal Entry", "create", throw=True)
+	check_company(company)
 	start, end = month_bounds(month)
 	lock_company(company)
 	if tva_reversal_entry(company, end):
