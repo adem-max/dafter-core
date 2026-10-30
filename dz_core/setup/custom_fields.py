@@ -82,6 +82,8 @@ CUSTOMER_FIELDS = [
 		"insert_after": "dz_section",
 		"in_standard_filter": 1,
 		"in_global_search": 1,
+		# looked up by dz_cod's phone checks on every order (review of 27 October 2026, 4.1)
+		"search_index": 1,
 	},
 	{
 		"fieldname": "dz_wilaya",
