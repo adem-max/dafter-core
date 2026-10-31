@@ -100,7 +100,13 @@ doc_events = {
 	# a suspended client reads and exports, saves nothing (suspension.py)
 	"*": {
 		event: "dz_core.suspension.check"
-		for event in ("before_validate", "before_submit", "before_cancel", "on_trash")
+		for event in (
+			"before_validate",
+			"before_submit",
+			"before_update_after_submit",
+			"before_cancel",
+			"on_trash",
+		)
 	},
 }
 

@@ -117,5 +117,5 @@ this dz_core, and weekly against Frappe's and ERPNext's version-16 branches:
 [![CI](https://github.com/adem-max/dafter-core/actions/workflows/ci.yml/badge.svg)](https://github.com/adem-max/dafter-core/actions/workflows/ci.yml).
 No test count here: it went stale with every change; CI's log has it.
 
-What changed release by release, across the three apps: `CHANGELOG.md` in the
-Daftar workspace (one file for the three, since they are released together).
+What changed release by release, across the three apps: [CHANGELOG.md](CHANGELOG.md)
+(one file for the three, since they are released together).

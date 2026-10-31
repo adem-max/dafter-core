@@ -8,7 +8,11 @@
 # Each demo gets its own development server (bench serve, one port per site)
 # and its own Cloudflare quick tunnel (no Cloudflare account, a new
 # *.trycloudflare.com link at every start). Anyone with a link reaches the
-# login page: stop it when the demo is over.
+# login page: stop it when the demo is over. bench serve runs with CI=1: it
+# then starts Werkzeug without its debugger, whose error pages show the code
+# and offer a console (frappe/app.py serve; review of 31 October 2026), and
+# DEV_SERVER=0 (set by `bench start`): Frappe then shows tracebacks to anyone
+# (frappe/utils/response.py is_traceback_allowed).
 #
 # Needs: `bench start` running (workers and Redis), cloudflared in ~/.local/bin
 # or on the PATH, the demo sites already loaded (docs/DEMO.md "Create a demo
@@ -53,7 +57,7 @@ for demo in "${DEMOS[@]}"; do
 		echo "--- $site: no such site, skipped"
 		continue
 	fi
-	nohup bench --site "$site" serve --port "$port" > "$LOGS/serve-$port.log" 2>&1 &
+	CI=1 DEV_SERVER=0 nohup bench --site "$site" serve --port "$port" > "$LOGS/serve-$port.log" 2>&1 &
 	nohup cloudflared tunnel --no-autoupdate --url "http://localhost:$port" > "$LOGS/tunnel-$port.log" 2>&1 &
 done
 
