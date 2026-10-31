@@ -35,8 +35,9 @@ Goal: you can set up a client and show it, without help.
   Still open: the accountant's validation of the statements, the IFU rates and the stamp duty; the arrêtés of the 2027 rules.
 - [x] **Review of 20 Oct 2026** (REVIEW-2026-10-20.md in the workspace). Section 1 (bugs) fixed and merged 20 Oct; section 2 (structure) done 21 Oct and released as **0.2.0** in the three repos: CI on every push, version check between the apps, optional features off by default, direct sales next to COD, COD orders invoiced at Livrée and Versements booked, lots in COD shipping, communes and stop desks per courier.
   Done when: the three suites pass locally and on GitHub, and the dev sites are migrated.
+- [x] **Reviews of 27 and 31 Oct 2026** (FIXES-DONE-2026-10-29.md in the workspace): every finding fixed, released as **0.4.1** (permissions, closings, couriers, audit chain, suspension, passwords off the command line, safe restore drill) and **0.4.2** (suspension of submitted orders, the session after the Administrator step, read-only order fields, demo servers without debugger). History: CHANGELOG.md.
 - [ ] **Install from GitHub.** `bench get-app` the three repos on a clean local bench (Fedora, see dafter-cod docs/LOCAL_TEST.md), then run the three test suites.
-  Done when: 110 dz_core, 121 dz_cod and 22 dz_hub tests pass on a bench built only from GitHub.
+  Done when: the three test suites pass on a bench built only from GitHub.
   (GitHub's CI already does this on every push since 20 Oct: `.github/workflows/ci.yml`.)
 - [ ] **Walk through the code.** Read every file in dz_core and write one line per file in your learning log: what it does, what calls it.
   Done when: you can explain `prepare()` and `import_workbook()` step by step without opening them.
